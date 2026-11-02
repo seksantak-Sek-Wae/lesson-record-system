@@ -37,9 +37,15 @@
           </div>
         </div>
         <div>
-          <h1 id="header-school-name" class="font-bold text-slate-900 text-sm sm:text-base leading-tight">
-            โรงเรียนสาธิตพัฒนาการศึกษา
-          </h1>
+          <div class="flex items-center space-x-2">
+            <h1 id="header-school-name" class="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+              โรงเรียนสาธิตพัฒนาการศึกษา
+            </h1>
+            <span id="cloud-sync-badge" class="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-2xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              <span>☁️ Cloud ซิงค์ข้อมูลสด</span>
+            </span>
+          </div>
           <p class="text-xs text-blue-600 font-medium">ระบบบันทึกหลังกิจกรรมการจัดการเรียนรู้</p>
         </div>
       </div>
@@ -1585,7 +1591,12 @@
   <!-- Toast Notification Container -->
   <div id="toast-container"></div>
 
-  <!-- Scripts -->
+  <!-- Firebase Realtime Database SDK (Compat) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+
+  <!-- Application Scripts -->
   <script src="js/storage.js"></script>
   <script src="js/visitor-tracker.js"></script>
   <script src="js/print.js"></script>

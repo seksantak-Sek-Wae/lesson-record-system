@@ -218,8 +218,114 @@ class StorageManager {
       }
     }
 
+    // เริ่มต้นระบบเชื่อมต่อและซิงค์ข้อมูลกับ Firebase Realtime Database
+    this.initCloudSync();
+
     // รันระบบตรวจสอบและบีบอัดรูปภาพเก่าอัตโนมัติ (Self-Healing Storage Optimizer)
     setTimeout(() => this.autoOptimizeStorage(), 500);
+  }
+
+  // --- ระบบเชื่อมต่อและซิงค์ข้อมูลข้ามอุปกรณ์ผ่าน Firebase Realtime Database (Cloud Sync) ---
+  initCloudSync() {
+    if (!window.firebaseDb) {
+      console.info('ℹ️ ใช้งานระบบในโหมด LocalStorage (ไม่ได้เชื่อมต่อ Firebase)');
+      return;
+    }
+
+    const db = window.firebaseDb;
+    console.log('🚀 กำลังเชื่อมต่อซิงค์ข้อมูลสดกับ Firebase Realtime Database...');
+
+    const safeUI = (fn) => {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => { try { fn(); } catch(e){} }, { once: true });
+      } else {
+        try { fn(); } catch(e) {}
+      }
+    };
+
+    // 1. ซิงค์บัญชีผู้ใช้งาน (Accounts)
+    db.ref('accounts').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        let accounts = [];
+        if (Array.isArray(val)) {
+          accounts = val.filter(Boolean);
+        } else if (typeof val === 'object') {
+          accounts = Object.values(val).filter(Boolean);
+        }
+
+        if (accounts.length > 0) {
+          localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
+          
+          safeUI(() => {
+            if (window.app && typeof window.app.renderAccountsTable === 'function') {
+              window.app.renderAccountsTable();
+            }
+            if (window.formMgr && typeof window.formMgr.populateTeacherDropdown === 'function') {
+              window.formMgr.populateTeacherDropdown();
+            }
+            if (window.dashboardMgr && typeof window.dashboardMgr.updateFilterDropdowns === 'function') {
+              window.dashboardMgr.updateFilterDropdowns();
+            }
+          });
+        }
+      } else {
+        // หากบนคลาวด์ยังว่างเปล่า ให้สำเนาค่าตั้งต้นขึ้นไปเก็บบนคลาวด์
+        const localAccs = this.getAccounts();
+        if (localAccs && localAccs.length > 0) {
+          db.ref('accounts').set(JSON.parse(JSON.stringify(localAccs))).catch(() => {});
+        }
+      }
+    }, (err) => {
+      console.warn('Firebase accounts sync error:', err);
+    });
+
+    // 2. ซิงค์ประวัติบันทึกหลังสอน (Records)
+    db.ref('records').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val) {
+        let records = [];
+        if (Array.isArray(val)) {
+          records = val.filter(Boolean);
+        } else if (typeof val === 'object') {
+          records = Object.values(val).filter(Boolean);
+        }
+
+        localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
+        safeUI(() => {
+          if (window.dashboardMgr && typeof window.dashboardMgr.render === 'function') {
+            window.dashboardMgr.render();
+          }
+        });
+      } else {
+        const localRecs = this.getRecords();
+        if (localRecs && localRecs.length > 0) {
+          db.ref('records').set(JSON.parse(JSON.stringify(localRecs))).catch(() => {});
+        }
+      }
+    }, (err) => {
+      console.warn('Firebase records sync error:', err);
+    });
+
+    // 3. ซิงค์ข้อมูลโรงเรียน (Settings)
+    db.ref('settings').on('value', (snapshot) => {
+      const val = snapshot.val();
+      if (val && typeof val === 'object') {
+        localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(val));
+        safeUI(() => {
+          if (window.app && typeof window.app.updateHeaderBrand === 'function') {
+            window.app.updateHeaderBrand();
+          }
+        });
+      } else {
+        const localSet = this.getSettings();
+        if (localSet) {
+          db.ref('settings').set(JSON.parse(JSON.stringify(localSet))).catch(() => {});
+        }
+      }
+    }, (err) => {
+      console.warn('Firebase settings sync error:', err);
+    });
   }
 
   // ระบบตรวจสอบและบีบอัดรูปภาพเก่าที่ค้างอยู่ใน LocalStorage คืนพื้นที่ว่างให้ระบบทันที
@@ -308,6 +414,13 @@ class StorageManager {
 
   saveSettings(settings) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
+    if (window.firebaseDb) {
+      try {
+        window.firebaseDb.ref('settings').set(JSON.parse(JSON.stringify(settings))).catch(e => console.warn('Firebase saveSettings error:', e));
+      } catch (e) {
+        console.warn('Firebase saveSettings exception:', e);
+      }
+    }
   }
 
   // --- บัญชีผู้ใช้ ---
@@ -328,6 +441,13 @@ class StorageManager {
         throw new Error('หน่วยความจำ LocalStorage เต็ม ไม่สามารถบันทึกข้อมูลบัญชีได้ กรุณาลดขนาดรูปภาพ');
       }
       throw err;
+    }
+    if (window.firebaseDb) {
+      try {
+        window.firebaseDb.ref('accounts').set(JSON.parse(JSON.stringify(accounts))).catch(e => console.warn('Firebase saveAccounts error:', e));
+      } catch (e) {
+        console.warn('Firebase saveAccounts exception:', e);
+      }
     }
   }
 
@@ -673,6 +793,9 @@ class StorageManager {
           });
           try {
             localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(emergencySlim));
+            if (window.firebaseDb) {
+              window.firebaseDb.ref('records').set(JSON.parse(JSON.stringify(emergencySlim))).catch(() => {});
+            }
             return;
           } catch (err3) {
             throw new Error('หน่วยความจำ LocalStorage เต็ม ไม่สามารถบันทึกได้ กรุณาลบประวัติเก่าหรือรูปภาพ');
@@ -680,6 +803,13 @@ class StorageManager {
         }
       }
       throw err;
+    }
+    if (window.firebaseDb) {
+      try {
+        window.firebaseDb.ref('records').set(JSON.parse(JSON.stringify(records))).catch(e => console.warn('Firebase saveRecords error:', e));
+      } catch (e) {
+        console.warn('Firebase saveRecords exception:', e);
+      }
     }
   }
 

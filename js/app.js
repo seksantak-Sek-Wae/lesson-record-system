@@ -30,12 +30,28 @@ class App {
   setupAuthEvents() {
     const loginForm = document.getElementById('login-form');
     if (loginForm) {
-      loginForm.addEventListener('submit', (e) => {
+      loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = document.getElementById('login-username').value.trim();
         const password = document.getElementById('login-password').value.trim();
 
-        const user = window.storageMgr.authenticate(username, password);
+        let user = window.storageMgr.authenticate(username, password);
+
+        // กรณีล็อกอินจากอุปกรณ์ใหม่/มือถือ/ไอแพดครั้งแรก หากยังไม่เจอในเครื่อง ให้ดึงบัญชีล่าสุดจาก Cloud ทันที
+        if (!user && window.firebaseDb) {
+          try {
+            const snap = await window.firebaseDb.ref('accounts').once('value');
+            const val = snap.val();
+            if (val) {
+              const accs = Array.isArray(val) ? val.filter(Boolean) : Object.values(val).filter(Boolean);
+              localStorage.setItem('lesson_records_accounts', JSON.stringify(accs));
+              user = accs.find(a => a.username.trim() === username && a.password.trim() === password);
+            }
+          } catch (err) {
+            console.warn('Firebase login sync check error:', err);
+          }
+        }
+
         if (user) {
           window.storageMgr.setCurrentUser(user);
           this.closeLoginModal();
