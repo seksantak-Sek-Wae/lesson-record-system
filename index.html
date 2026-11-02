@@ -1,0 +1,1526 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบบันทึกหลังกิจกรรมการจัดการเรียนรู้</title>
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Custom Styles & 1-Page A4 Print CSS -->
+  <link rel="stylesheet" href="css/styles.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            prompt: ['Prompt', 'sans-serif'],
+            sarabun: ['Sarabun', 'sans-serif']
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+  <!-- Header Section (Screen only) -->
+  <header id="app-header" class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & School Info -->
+      <div class="flex items-center space-x-3">
+        <div id="header-school-logo">
+          <div class="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-lg shadow-sm">
+            🏫
+          </div>
+        </div>
+        <div>
+          <h1 id="header-school-name" class="font-bold text-slate-900 text-sm sm:text-base leading-tight">
+            โรงเรียนสาธิตพัฒนาการศึกษา
+          </h1>
+          <p class="text-xs text-blue-600 font-medium">ระบบบันทึกหลังกิจกรรมการจัดการเรียนรู้</p>
+        </div>
+      </div>
+
+      <!-- Current User Profile & Actions with Portrait Photo -->
+      <div class="flex items-center space-x-3">
+        <div class="flex items-center space-x-2.5">
+          <div id="current-user-avatar">
+            <!-- Avatar photo inserted by JS -->
+          </div>
+          <div class="text-right">
+            <div id="current-user-name" class="font-bold text-xs sm:text-sm text-slate-900">กำลังโหลด...</div>
+            <span id="current-user-role" class="px-2 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600">
+              ผู้ใช้
+            </span>
+          </div>
+        </div>
+
+        <button id="btn-logout" class="text-xs text-slate-500 hover:text-red-600 hover:bg-red-50 p-2 rounded-lg border border-slate-200 transition" title="ออกจากระบบ">
+          🚪 ออกจากระบบ
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Navigation Bar (Screen only, with role permissions) -->
+  <nav id="app-nav" class="bg-white border-b border-slate-200 shadow-xs">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex space-x-1 sm:space-x-2 py-2 overflow-x-auto">
+        <!-- แดชบอร์ด (ทุก Role) -->
+        <button data-tab="tab-dashboard" data-role-perm="admin,teacher,academic,director" class="nav-tab-btn bg-blue-600 text-white shadow px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>📊</span>
+          <span>แดชบอร์ด</span>
+        </button>
+
+        <!-- บันทึกหลังสอน (แอดมิน, ครู) -->
+        <button data-tab="tab-form" data-role-perm="admin,teacher" class="nav-tab-btn text-slate-600 hover:bg-slate-100 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>📝</span>
+          <span>บันทึกหลังสอน</span>
+        </button>
+
+        <!-- ประวัติการบันทึก (ทุก Role) -->
+        <button data-tab="tab-history" data-role-perm="admin,teacher,academic,director" class="nav-tab-btn text-slate-600 hover:bg-slate-100 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>📚</span>
+          <span>ประวัติบันทึก</span>
+        </button>
+
+        <!-- ข้อมูลส่วนตัวของฉัน (เฉพาะครู) -->
+        <button data-tab="tab-profile" data-role-perm="teacher" class="nav-tab-btn text-slate-600 hover:bg-slate-100 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>👤</span>
+          <span>ข้อมูลส่วนตัวของฉัน</span>
+        </button>
+
+        <!-- จัดการบัญชีผู้ใช้ (เฉพาะแอดมิน) -->
+        <button data-tab="tab-admin-accounts" data-role-perm="admin" class="nav-tab-btn text-slate-600 hover:bg-slate-100 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>👥</span>
+          <span>จัดการบัญชีผู้ใช้ (ครู/วิชาการ/ผอ.)</span>
+        </button>
+
+        <!-- ข้อมูลพื้นฐานโรงเรียน (เฉพาะแอดมิน) -->
+        <button data-tab="tab-settings" data-role-perm="admin" class="nav-tab-btn text-slate-600 hover:bg-slate-100 px-3 sm:px-4 py-2 rounded-lg text-sm font-medium transition flex items-center space-x-1.5 whitespace-nowrap">
+          <span>⚙️</span>
+          <span>ข้อมูลพื้นฐานโรงเรียน</span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main Content Area -->
+  <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex-1 w-full">
+
+    <!-- ========================================== -->
+    <!-- TAB 1: แดชบอร์ดสรุปผล (DASHBOARD)          -->
+    <!-- ========================================== -->
+    <div id="tab-dashboard" class="tab-content">
+      <!-- KPI Cards -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-2xl font-bold">📄</div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">จำนวนที่บันทึกแล้ว</div>
+            <div id="stat-total-records" class="text-2xl font-bold text-slate-900">0</div>
+            <div class="text-xs text-emerald-600 mt-0.5">รวมทุกระดับชั้น/รายวิชา</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center text-2xl font-bold">👨‍🏫</div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">ครูผู้สอนที่บันทึก</div>
+            <div id="stat-total-teachers" class="text-2xl font-bold text-slate-900">0 ท่าน</div>
+            <div class="text-xs text-slate-500 mt-0.5">สถานะการส่งบันทึก</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-2xl font-bold">🎓</div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">นักเรียนที่ประเมินแล้ว</div>
+            <div id="stat-total-students" class="text-2xl font-bold text-slate-900">0 คน</div>
+            <div class="text-xs text-slate-500 mt-0.5">ยอดรวมผู้เรียน</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center space-x-4">
+          <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-2xl font-bold">🌟</div>
+          <div>
+            <div class="text-xs font-medium text-slate-500 uppercase tracking-wider">ผ่านเกณฑ์ชำนาญ-เชี่ยวชาญ</div>
+            <div id="stat-good-rate" class="text-2xl font-bold text-slate-900">0.0%</div>
+            <div class="text-xs text-emerald-600 mt-0.5">ระดับชำนาญ + เชี่ยวชาญ</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Charts Section -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-900 text-base">สัดส่วนผลการประเมิน 4 ระดับ (ด้านความรู้)</h3>
+            <span class="text-xs text-slate-500">สถิติสะสม</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-levels"></canvas>
+          </div>
+          <div class="grid grid-cols-4 text-center mt-3 pt-3 border-t border-slate-100 text-xs">
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-red-500 mr-1"></span>เริ่มต้น</div>
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-amber-400 mr-1"></span>พัฒนา</div>
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-blue-500 mr-1"></span>ชำนาญ</div>
+            <div><span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500 mr-1"></span>เชี่ยวชาญ</div>
+          </div>
+        </div>
+
+        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+          <div class="flex items-center justify-between mb-4">
+            <h3 class="font-bold text-slate-900 text-base">จำนวนบันทึกหลังสอนแยกตามระดับชั้น</h3>
+            <span class="text-xs text-slate-500">สถิติสะสม</span>
+          </div>
+          <div class="h-64 relative">
+            <canvas id="chart-grades"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent Records Table -->
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">บันทึกหลังกิจกรรมการจัดการเรียนรู้ล่าสุด</h3>
+            <p class="text-xs text-slate-500">สามารถกดสั่งพิมพ์ 1 หน้า A4 หรือตรวจลงนามได้ทันที</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <!-- ปุ่มเปิดหน้าต่างติดตามความถี่การส่งของครู (แสดงเฉพาะฝ่ายบริหาร: วิชาการ, ผอ., แอดมิน) -->
+            <button type="button" id="btn-open-frequency-modal-dash" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+              <span>📊</span>
+              <span>ติดตามความถี่การส่งของครู</span>
+            </button>
+            <button onclick="window.app.switchTab('tab-history')" class="text-xs text-blue-600 hover:text-blue-800 font-medium whitespace-nowrap">
+              ดูทั้งหมด →
+            </button>
+          </div>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider">
+                <th class="py-3 px-4">วันที่</th>
+                <th class="py-3 px-4">เรื่อง / แผนการเรียนรู้</th>
+                <th class="py-3 px-4">ระดับชั้น</th>
+                <th class="py-3 px-4">ครูผู้สอน</th>
+                <th class="py-3 px-4 text-center">สถานะตรวจ</th>
+                <th class="py-3 px-4 text-right">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="table-recent-records"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: ฟอร์มบันทึกหลังสอน (FORM)          -->
+    <!-- ========================================== -->
+    <div id="tab-form" class="tab-content hidden">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-4xl mx-auto">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-200 pb-4 mb-6 gap-2">
+          <div>
+            <h2 id="form-title-text" class="text-xl font-bold text-slate-900">บันทึกหลังกิจกรรมการจัดการเรียนรู้ (สร้างใหม่)</h2>
+            <p class="text-xs text-slate-500 mt-1">กรอกข้อมูลตามแบบฟอร์ม จัดหน้า A4 หน้าเดียวพอดี พร้อมระบบแนะนำข้อความอัจฉริยะ</p>
+          </div>
+          <button type="button" id="btn-smart-suggest" class="bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-300 px-3.5 py-2 rounded-lg text-xs font-bold shadow-xs transition flex items-center space-x-1.5 self-start sm:self-auto" title="กรอกข้อความแนะนำมาตรฐานแบบกลาง ๆ ลงในทุกช่องพร้อมกัน">
+            <span>✨</span>
+            <span>แนะนำข้อความแบบกลางๆ</span>
+          </button>
+        </div>
+
+        <form id="lesson-record-form" class="space-y-6">
+          <input type="hidden" id="form-record-id" value="">
+
+          <!-- 1. ข้อมูลแผนและบทเรียน -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h4 class="text-sm font-bold text-slate-800 mb-3 flex items-center space-x-1.5">
+              <span>📌</span>
+              <span>1. ข้อมูลทั่วไปของแผนการจัดการเรียนรู้</span>
+            </h4>
+            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 mb-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ภาคเรียนที่ <span class="text-red-500">*</span></label>
+                <select id="input-semester" required class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-medium">
+                  <option value="1">ภาคเรียนที่ 1</option>
+                  <option value="2">ภาคเรียนที่ 2</option>
+                  <option value="ฤดูร้อน">ภาคเรียนฤดูร้อน</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ปีการศึกษา <span class="text-red-500">*</span></label>
+                <input type="text" id="input-academic-year" required value="2567" placeholder="เช่น 2567" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm font-medium">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">วันที่สอน <span class="text-red-500">*</span></label>
+                <input type="date" id="input-date" required class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">หน่วยที่</label>
+                <input type="text" id="input-unit" placeholder="เช่น 1, 2" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">แผนที่</label>
+                <input type="text" id="input-planno" placeholder="เช่น 3, 4" class="w-full bg-white border border-slate-300 rounded-lg px-2.5 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ระดับชั้น <span class="text-red-500">*</span></label>
+                <select id="input-grade" required class="w-full bg-white border border-slate-300 rounded-lg px-2 py-2 text-sm">
+                  <option value="">-- เลือกระดับชั้น --</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 1">ชั้นประถมศึกษาปีที่ 1</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 2">ชั้นประถมศึกษาปีที่ 2</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 3">ชั้นประถมศึกษาปีที่ 3</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 4">ชั้นประถมศึกษาปีที่ 4</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 5">ชั้นประถมศึกษาปีที่ 5</option>
+                  <option value="ชั้นประถมศึกษาปีที่ 6">ชั้นประถมศึกษาปีที่ 6</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 1">ชั้นมัธยมศึกษาปีที่ 1</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 2">ชั้นมัธยมศึกษาปีที่ 2</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 3">ชั้นมัธยมศึกษาปีที่ 3</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 4">ชั้นมัธยมศึกษาปีที่ 4</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 5">ชั้นมัธยมศึกษาปีที่ 5</option>
+                  <option value="ชั้นมัธยมศึกษาปีที่ 6">ชั้นมัธยมศึกษาปีที่ 6</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
+              <div class="sm:col-span-2">
+                <label class="block text-xs font-semibold text-slate-700 mb-1">เรื่องที่จัดการเรียนรู้ <span class="text-red-500">*</span></label>
+                <input type="text" id="input-topic" required placeholder="ระบุชื่อเรื่อง เช่น การบวกและลบเศษส่วน, การอ่านจับใจความ" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-medium">
+              </div>
+              
+              <!-- วิชาที่ทำการบันทึก -->
+              <div>
+                <div class="flex items-center justify-between mb-1">
+                  <label class="block text-xs font-semibold text-slate-700">วิชาที่ทำการบันทึก <span class="text-red-500">*</span></label>
+                  <button type="button" id="btn-add-form-subject" class="text-[11px] text-blue-600 hover:text-blue-800 font-bold" title="เพิ่มวิชาใหม่เข้าระบบ">
+                    ➕ เพิ่มวิชาใหม่
+                  </button>
+                </div>
+                <select id="input-subject-select" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm mb-1.5"></select>
+                <input type="text" id="input-subject" required placeholder="หรือระบุ/แก้ไขชื่อวิชา" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">จำนวนชั่วโมงที่จัดกิจกรรมการเรียนรู้</label>
+                <select id="input-hours" class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm"></select>
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ครูผู้สอน <span class="text-red-500">*</span></label>
+                <select id="input-teacher" required class="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm"></select>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. ผลการเรียนการสอน (ด้านความรู้ 4 ระดับ) -->
+          <div class="bg-blue-50/50 p-4 rounded-xl border border-blue-200">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-sm font-bold text-blue-900 flex items-center space-x-1.5">
+                <span>📖</span>
+                <span>2. ผลการจัดการเรียนการสอน (ด้านความรู้)</span>
+              </h4>
+              <span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">คำนวณร้อยละอัตโนมัติ</span>
+            </div>
+
+            <div class="mb-3">
+              <label class="block text-xs font-semibold text-slate-700 mb-1">
+                มีนักเรียนทั้งหมด (คน) <span class="text-red-500">*</span>
+              </label>
+              <input type="number" id="input-total-students" min="0" required placeholder="ระบุจำนวนนักเรียนทั้งหมด" class="w-48 bg-white border border-slate-300 rounded-lg px-3 py-2 text-sm font-bold text-blue-700">
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+              <div class="bg-white p-3 rounded-lg border border-red-200 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-red-600">1. ระดับเริ่มต้น</span>
+                  <span id="val-level1-pct" class="text-xs font-bold bg-red-50 text-red-700 px-2 py-0.5 rounded">0.00%</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input-level1-count" min="0" value="0" class="w-full border border-slate-300 rounded-md px-2.5 py-1 text-sm">
+                  <span class="text-xs text-slate-500">คน</span>
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-lg border border-amber-200 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-amber-600">2. ระดับพัฒนา</span>
+                  <span id="val-level2-pct" class="text-xs font-bold bg-amber-50 text-amber-700 px-2 py-0.5 rounded">0.00%</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input-level2-count" min="0" value="0" class="w-full border border-slate-300 rounded-md px-2.5 py-1 text-sm">
+                  <span class="text-xs text-slate-500">คน</span>
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-lg border border-blue-200 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-blue-600">3. ระดับชำนาญ</span>
+                  <span id="val-level3-pct" class="text-xs font-bold bg-blue-50 text-blue-700 px-2 py-0.5 rounded">0.00%</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input-level3-count" min="0" value="0" class="w-full border border-slate-300 rounded-md px-2.5 py-1 text-sm">
+                  <span class="text-xs text-slate-500">คน</span>
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-lg border border-emerald-200 shadow-sm">
+                <div class="flex items-center justify-between mb-1">
+                  <span class="text-xs font-bold text-emerald-600">4. ระดับเชี่ยวชาญ</span>
+                  <span id="val-level4-pct" class="text-xs font-bold bg-emerald-50 text-emerald-700 px-2 py-0.5 rounded">0.00%</span>
+                </div>
+                <div class="flex items-center space-x-2">
+                  <input type="number" id="input-level4-count" min="0" value="0" class="w-full border border-slate-300 rounded-md px-2.5 py-1 text-sm">
+                  <span class="text-xs text-slate-500">คน</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="mt-3">
+              <div class="w-full h-2.5 bg-slate-200 rounded-full flex overflow-hidden">
+                <div id="bar-level1" style="width: 0%" class="bg-red-500 transition-all duration-300"></div>
+                <div id="bar-level2" style="width: 0%" class="bg-amber-400 transition-all duration-300"></div>
+                <div id="bar-level3" style="width: 0%" class="bg-blue-500 transition-all duration-300"></div>
+                <div id="bar-level4" style="width: 0%" class="bg-emerald-500 transition-all duration-300"></div>
+              </div>
+            </div>
+
+            <div id="calc-warning-msg" class="hidden mt-2 text-xs font-medium text-amber-700 bg-amber-50 p-2 rounded border border-amber-200"></div>
+          </div>
+
+          <!-- 3. ด้านทักษะ และ ด้านเจตคติ -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">ด้านทักษะ (P)</label>
+                <button type="button" class="btn-general-suggest text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded transition font-medium" data-target="input-skill" data-type="skill">
+                  💡 แนะนำแบบกลางๆ
+                </button>
+              </div>
+              <textarea id="input-skill" rows="3" placeholder="ระบุผลการจัดการเรียนรู้ด้านทักษะกระบวนการ (แบบกลาง ๆ ที่สอดคล้องกับแผน)" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm"></textarea>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-skill" data-text="ผู้เรียนสามารถปฏิบัติตามขั้นตอนได้อย่างถูกต้อง และทำงานร่วมกับผู้อื่นได้ดี">+ ปฏิบัติตามขั้นตอน</button>
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-skill" data-text="ผู้เรียนมีทักษะกระบวนการปฏิบัติจริง สามารถลงมือทำกิจกรรมและสรุปองค์ความรู้ได้ด้วยตนเอง">+ ปฏิบัติจริง/สรุปเอง</button>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">ด้านเจตคติ (A)</label>
+                <button type="button" class="btn-general-suggest text-[11px] bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded transition font-medium" data-target="input-attitude" data-type="attitude">
+                  💡 แนะนำแบบกลางๆ
+                </button>
+              </div>
+              <textarea id="input-attitude" rows="3" placeholder="ระบุผลการจัดการเรียนรู้ด้านเจตคติ คุณลักษณะอันพึงประสงค์" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm"></textarea>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-attitude" data-text="ผู้เรียนมีความสนใจ ใฝ่เรียนรู้ มีวินัย และตั้งใจปฏิบัติตามข้อตกลงในการเรียน">+ ใฝ่เรียนรู้/มีวินัย</button>
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-attitude" data-text="ผู้เรียนให้ความร่วมมือในการทำงานกลุ่ม มีน้ำใจ ช่วยเหลือซึ่งกันและกัน และส่งงานตรงต่อเวลา">+ ทำงานกลุ่ม/ตรงเวลา</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 4. ปัญหา/อุปสรรค และ แนวทางแก้ไข -->
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">ปัญหา/อุปสรรคจากการสอน</label>
+                <button type="button" class="btn-general-suggest text-[11px] bg-amber-50 hover:bg-amber-100 text-amber-700 border border-amber-200 px-2 py-0.5 rounded transition font-medium" data-target="input-problem" data-type="problem">
+                  💡 แนะนำแบบกลางๆ
+                </button>
+              </div>
+              <textarea id="input-problem" rows="3" placeholder="ระบุปัญหาหรืออุปสรรคที่พบจากการสอน" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm"></textarea>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-problem" data-text="ผู้เรียนบางคนมีพื้นฐานความรู้และทักษะเริ่มต้นที่แตกต่างกัน ทำให้ต้องใช้เวลาในการปฏิบัติกิจกรรมมากกว่าปกติ">+ พื้นฐานต่างกัน</button>
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-problem" data-text="เวลาในการทำกิจกรรมและสรุปบทเรียนมีจำกัด ทำให้ผู้เรียนบางกลุ่มยังสรุปองค์ความรู้ได้ไม่สมบูรณ์เท่าที่ควร">+ เวลาจำกัด</button>
+              </div>
+            </div>
+
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <label class="block text-xs font-semibold text-slate-700">แนวทางการแก้ไข</label>
+                <button type="button" class="btn-general-suggest text-[11px] bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded transition font-medium" data-target="input-solution" data-type="solution">
+                  💡 แนะนำแบบกลางๆ
+                </button>
+              </div>
+              <textarea id="input-solution" rows="3" placeholder="ระบุแนวทางและวิธีการแก้ไขปัญหา" class="w-full bg-white border border-slate-300 rounded-lg p-2.5 text-sm"></textarea>
+              <div class="mt-1 flex flex-wrap gap-1">
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-solution" data-text="จัดกิจกรรมแบบเพื่อนช่วยเพื่อน และให้คำแนะนำเสริมรายบุคคลแก่นักเรียนที่ต้องการการดูแลเพิ่มเติม">+ เพื่อนช่วยเพื่อน</button>
+                <button type="button" class="btn-preset-pill text-[10px] bg-slate-100 hover:bg-slate-200 text-slate-600 px-1.5 py-0.5 rounded" data-target="input-solution" data-text="ปรับสื่อและใบงานให้กระชับ ชัดเจน พร้อมเสริมแรงทางบวกด้วยการชมเชยเพื่อสร้างความมั่นใจแก่ผู้เรียน">+ ปรับสื่อ/เสริมแรง</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. อัปโหลดรูปภาพกิจกรรมการเรียนการสอน 2 รูป -->
+          <div class="bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <h4 class="text-sm font-bold text-slate-800 mb-2 flex items-center space-x-1.5">
+              <span>📷</span>
+              <span>รูปภาพการจัดกิจกรรมการเรียนการสอน (จำนวน 2 รูป สัดส่วน 4*3)</span>
+            </h4>
+            <p class="text-xs text-slate-500 mb-3">รูปภาพจะถูกจัดวางในเอกสารพิมพ์ A4 ด้วยกรอบสัดส่วน 4:3 อย่างสวยงามคมชัด</p>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <!-- รูปภาพที่ 1 -->
+              <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="w-24 h-[72px] bg-slate-100 rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative aspect-[4/3]">
+                  <img id="preview-activity-photo1" src="" alt="ภาพกิจกรรม 1" class="w-full h-full object-cover hidden" />
+                  <span id="placeholder-photo1" class="text-2xl text-slate-300">🖼️</span>
+                </div>
+                <div class="flex-1 space-y-1.5">
+                  <div class="text-xs font-bold text-slate-700">รูปที่ 1: บรรยากาศการสอน (4:3)</div>
+                  <label class="inline-block bg-white hover:bg-slate-50 text-blue-600 border border-blue-300 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition">
+                    <span>📁 เลือกรูปภาพ 1</span>
+                    <input type="file" id="input-activity-photo1" accept="image/*" class="hidden">
+                  </label>
+                  <button type="button" id="btn-remove-photo1" class="hidden block text-[11px] text-red-600 hover:text-red-700 font-medium">
+                    ❌ ลบรูป
+                  </button>
+                </div>
+              </div>
+
+              <!-- รูปภาพที่ 2 -->
+              <div class="bg-white p-3 rounded-lg border border-slate-200 shadow-xs flex items-center space-x-3">
+                <div class="w-24 h-[72px] bg-slate-100 rounded-lg border border-dashed border-slate-300 flex items-center justify-center overflow-hidden relative aspect-[4/3]">
+                  <img id="preview-activity-photo2" src="" alt="ภาพกิจกรรม 2" class="w-full h-full object-cover hidden" />
+                  <span id="placeholder-photo2" class="text-2xl text-slate-300">🖼️</span>
+                </div>
+                <div class="flex-1 space-y-1.5">
+                  <div class="text-xs font-bold text-slate-700">รูปที่ 2: ผลงาน/กิจกรรมผู้เรียน (4:3)</div>
+                  <label class="inline-block bg-white hover:bg-slate-50 text-blue-600 border border-blue-300 px-2.5 py-1 rounded text-xs font-semibold cursor-pointer transition">
+                    <span>📁 เลือกรูปภาพ 2</span>
+                    <input type="file" id="input-activity-photo2" accept="image/*" class="hidden">
+                  </label>
+                  <button type="button" id="btn-remove-photo2" class="hidden block text-[11px] text-red-600 hover:text-red-700 font-medium">
+                    ❌ ลบรูป
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- วันที่ครูลงนาม -->
+          <div class="bg-slate-50 p-3 rounded-lg border border-slate-200 flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700">วันที่ครูผู้สอนลงนาม:</span>
+            <input type="date" id="input-teacher-signdate" class="bg-white border border-slate-300 rounded-md px-3 py-1.5 text-sm">
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-slate-200">
+            <button type="button" id="btn-reset-form" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition">
+              ล้างฟอร์ม
+            </button>
+            <div class="flex items-center space-x-3">
+              <button type="submit" id="btn-save-record" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition">
+                💾 บันทึกข้อมูล
+              </button>
+              <button type="submit" id="btn-save-and-print" class="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition flex items-center space-x-1.5">
+                <span>🖨️</span>
+                <span>บันทึกและพิมพ์ 1 หน้า A4</span>
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: ประวัติการบันทึก (HISTORY)         -->
+    <!-- ========================================== -->
+    <div id="tab-history" class="tab-content hidden">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 mb-6">
+        <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+          <div>
+            <h2 class="text-lg font-bold text-slate-900">ประวัติบันทึกหลังกิจกรรมการจัดการเรียนรู้</h2>
+            <p class="text-xs text-slate-500">สามารถค้นหา กรองสถานะการตรวจ และสั่งพิมพ์เอกสาร 1 หน้า A4 ย้อนหลังได้ทุกรายการ</p>
+          </div>
+          <div class="flex items-center space-x-2">
+            <!-- ปุ่มเปิดหน้าต่างติดตามความถี่การส่งของครู (แสดงเฉพาะฝ่ายบริหาร: วิชาการ, ผอ., แอดมิน) -->
+            <button type="button" id="btn-open-frequency-modal" class="hidden bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition flex items-center space-x-1.5">
+              <span>📊</span>
+              <span>ติดตามความถี่การส่งของครู</span>
+            </button>
+            <div id="history-count-label" class="text-xs font-semibold bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full self-start md:self-auto">
+              กำลังโหลด...
+            </div>
+          </div>
+        </div>
+
+        <!-- แถบปุ่ม Quick Filter สถานะการตรวจอนุมัติ (แยกตรวจแล้ว / ยังไม่ตรวจ) -->
+        <div class="flex flex-wrap items-center justify-between gap-3 mb-4 p-3 bg-slate-50 rounded-xl border border-slate-200">
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="text-xs font-bold text-slate-700 mr-1 flex items-center gap-1">
+              <span>🔍</span>
+              <span>สถานะตรวจ:</span>
+            </span>
+            <button type="button" data-filter-status="all" class="btn-filter-status bg-blue-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-xs transition">
+              📋 ทั้งหมด (<span id="status-count-all">0</span>)
+            </button>
+            <button type="button" data-filter-status="pending" class="btn-filter-status bg-white hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+              ⏳ ยังไม่ตรวจ (<span id="status-count-pending">0</span>)
+            </button>
+            <button type="button" data-filter-status="approved" class="btn-filter-status bg-white hover:bg-slate-200 text-slate-700 border border-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition">
+              ✅ ตรวจแล้ว (<span id="status-count-approved">0</span>)
+            </button>
+          </div>
+
+          <div class="text-[11px] text-slate-500">
+            <span>💡 คลิกปุ่มเพื่อกรองรายการที่รอตรวจหรือตรวจเสร็จแล้วได้ทันที</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <input type="text" id="history-search" placeholder="🔍 ค้นหาคำสำคัญ, เรื่อง, วิชา..." class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+          </div>
+          <div>
+            <select id="history-filter-teacher" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              <option value="">ครูผู้สอนทั้งหมด</option>
+            </select>
+          </div>
+          <div>
+            <select id="history-filter-grade" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              <option value="">ระดับชั้นทั้งหมด</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-sm">
+            <thead>
+              <tr class="bg-slate-50 text-slate-600 border-b border-slate-200 text-xs font-semibold uppercase tracking-wider">
+                <th class="py-3 px-4 text-center w-12">ที่</th>
+                <th class="py-3 px-4 w-32">วันที่</th>
+                <th class="py-3 px-4">เรื่อง / แผนการเรียนรู้</th>
+                <th class="py-3 px-4 w-32">ระดับชั้น</th>
+                <th class="py-3 px-4 w-44">ครูผู้สอน</th>
+                <th class="py-3 px-4 w-32">ผลประเมิน</th>
+                <th class="py-3 px-4 text-right w-44">การจัดการ</th>
+              </tr>
+            </thead>
+            <tbody id="table-history-records"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 4: ข้อมูลส่วนตัวของครู (PROFILE)       -->
+    <!-- ========================================== -->
+    <div id="tab-profile" class="tab-content hidden">
+      <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-6 max-w-3xl mx-auto">
+        <div class="border-b border-slate-100 pb-3 mb-5">
+          <h2 class="text-lg font-bold text-slate-900">👤 ข้อมูลส่วนตัวของครูผู้สอน</h2>
+          <p class="text-xs text-slate-500">จัดการข้อมูลส่วนตัว รูปถ่ายใบหน้า และรายวิชาที่ทำการสอน</p>
+        </div>
+
+        <form id="teacher-profile-form" class="space-y-4">
+          <!-- รูปถ่ายใบหน้าครูผู้สอน (Portrait Photo) -->
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 mb-2">รูปถ่ายใบหน้าของครูผู้สอน (Portrait Photo)</label>
+            <div class="flex items-center space-x-4">
+              <div class="w-20 h-24 bg-white border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden relative shadow-xs">
+                <img id="preview-teacher-avatar" src="" alt="Teacher Avatar" class="w-full h-full object-cover hidden" />
+                <span id="placeholder-teacher-avatar" class="text-3xl text-slate-300">👤</span>
+              </div>
+              <div class="space-y-1.5">
+                <label class="inline-block bg-white hover:bg-slate-100 text-blue-600 border border-blue-300 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer shadow-xs transition">
+                  <span>📷 อัปโหลดรูปถ่ายใบหน้า</span>
+                  <input type="file" id="input-teacher-avatar-file" accept="image/*,.heic,.heif,.jfif,.webp,.jpg,.jpeg,.png" class="hidden">
+                </label>
+                <button type="button" id="btn-remove-teacher-avatar" class="hidden block text-xs text-red-600 hover:text-red-700 font-medium">
+                  ❌ ลบรูปถ่าย
+                </button>
+                <p class="text-[11px] text-slate-400">รูปภาพจะแสดงบนแถบระบบและเอกสารบันทึกหลังสอน</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+            <input type="text" id="profile-name" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm">
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง (Position)</label>
+              <select id="profile-position" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">วิทยฐานะ (Academic Rank)</label>
+              <select id="profile-rank" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm"></select>
+            </div>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">กลุ่มสาระการเรียนรู้</label>
+              <select id="profile-subject-group" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm"></select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">จำนวนชั่วโมงที่จัดกิจกรรมการเรียนรู้</label>
+              <select id="profile-hours" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm"></select>
+            </div>
+          </div>
+
+          <!-- จัดการรายวิชาที่ทำการสอน (เพิ่มได้หลายวิชา) -->
+          <div class="p-4 bg-blue-50/50 rounded-xl border border-blue-200">
+            <label class="block text-xs font-bold text-blue-900 mb-1.5">
+              📚 รายวิชาที่ทำการสอน (สามารถเพิ่มได้หลายวิชา)
+            </label>
+            <p class="text-[11px] text-slate-500 mb-2.5">
+              วิชาเหล่านี้จะปรากฏใน Dropdown ของฟอร์มบันทึกหลังสอน ให้คุณครูเลือกบันทึกได้อย่างสะดวก
+            </p>
+
+            <div id="profile-subjects-badges" class="flex flex-wrap gap-2 mb-3"></div>
+
+            <div class="flex gap-2">
+              <input type="text" id="profile-new-subject-input" placeholder="พิมพ์ชื่อวิชาที่ต้องการเพิ่ม เช่น คณิตศาสตร์ ม.2, เพิ่มเติม ม.3" class="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+              <button type="button" id="btn-profile-add-subject" class="bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-1.5 rounded-lg text-xs font-bold transition flex items-center space-x-1">
+                <span>➕</span>
+                <span>เพิ่มวิชา</span>
+              </button>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">วิชาเริ่มต้นที่ทำการบันทึกหลังกิจกรรมการเรียนรู้</label>
+            <select id="profile-active-subject" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm"></select>
+          </div>
+
+          <!-- ลายเซ็นครู -->
+          <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+            <label class="block text-xs font-bold text-slate-700 mb-2">ลายมือชื่ออิเล็กทรอนิกส์ของครู (Signature)</label>
+            <div class="flex items-center space-x-4">
+              <div class="w-36 h-14 bg-white border border-slate-300 rounded-lg flex items-center justify-center overflow-hidden p-1">
+                <img id="preview-teacher-sig" src="" alt="Signature" class="max-h-full max-w-full object-contain hidden" />
+              </div>
+              <div>
+                <div class="flex items-center space-x-2">
+                  <label class="inline-block bg-white hover:bg-slate-100 text-blue-600 border border-blue-300 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer shadow-sm transition">
+                    <span>📁 อัปโหลดรูปลายเซ็น (PNG/JPG)</span>
+                    <input type="file" id="input-teacher-sig-file" accept="image/*" class="hidden">
+                  </label>
+                  <button type="button" id="btn-remove-teacher-sig" class="hidden text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2.5 py-1.5 rounded-lg font-medium transition">
+                    ❌ ลบลายเซ็น
+                  </button>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">ลายเซ็นจะถูกนำไปประทับในช่องผู้สอนในเอกสาร A4 อัตโนมัติ</p>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">เปลี่ยนรหัสผ่านใหม่ (หากไม่ต้องการเปลี่ยนให้เว้นว่างไว้)</label>
+            <input type="password" id="profile-new-password" placeholder="ตั้งรหัสผ่านใหม่" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm">
+          </div>
+
+          <div class="pt-2">
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition">
+              💾 บันทึกข้อมูลส่วนตัว
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 5: แอดมินจัดการบัญชีผู้ใช้ (ACCOUNTS)    -->
+    <!-- ========================================== -->
+    <div id="tab-admin-accounts" class="tab-content hidden">
+      <div class="space-y-6">
+        
+        <!-- แถบเลือกส่วนการจัดการบัญชี (Sub-navigation) -->
+        <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2">
+          <button type="button" id="subtab-btn-teachers" onclick="window.app.switchAdminAccountSubtab('teachers')" class="admin-subtab-btn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 bg-blue-600 text-white shadow-xs">
+            <span>👨‍🏫</span>
+            <span>จัดการบัญชีครูผู้สอนทั้งโรงเรียน</span>
+          </button>
+          <button type="button" id="subtab-btn-academic" onclick="window.app.switchAdminAccountSubtab('academic')" class="admin-subtab-btn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 bg-slate-100 text-slate-700 hover:bg-slate-200">
+            <span>📚</span>
+            <span>จัดการบัญชีหัวหน้ากลุ่มบริหารวิชาการ</span>
+          </button>
+          <button type="button" id="subtab-btn-director" onclick="window.app.switchAdminAccountSubtab('director')" class="admin-subtab-btn px-4 py-2 rounded-lg text-xs font-bold transition flex items-center space-x-2 bg-slate-100 text-slate-700 hover:bg-slate-200">
+            <span>🏫</span>
+            <span>จัดการบัญชีผู้อำนวยการโรงเรียน</span>
+          </button>
+        </div>
+
+        <!-- -------------------------------------------- -->
+        <!-- ส่วนที่ 1: จัดการบัญชีครูผู้สอน (TEACHERS)     -->
+        <!-- -------------------------------------------- -->
+        <div id="admin-panel-teachers" class="admin-account-panel">
+          <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- ฟอร์มสร้าง Account ครู -->
+            <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <h3 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center space-x-2">
+                <span>➕</span>
+                <span>ลงทะเบียนสร้างบัญชีครูผู้สอนใหม่</span>
+              </h3>
+
+              <form id="form-admin-add-account" class="space-y-3">
+                <input type="hidden" id="new-acc-role" value="teacher">
+                
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+                  <input type="text" id="new-acc-username" required placeholder="เช่น kru_somchai, kru3" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่าน (Password) <span class="text-red-500">*</span></label>
+                  <input type="text" id="new-acc-password" required placeholder="กำหนดรหัสผ่าน เช่น 123456" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล <span class="text-red-500">*</span></label>
+                  <input type="text" id="new-acc-name" required placeholder="เช่น นายสมชาย ใจดี" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง (รวมครูอัตราจ้าง)</label>
+                    <select id="new-acc-position" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs"></select>
+                  </div>
+                  <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">วิทยฐานะ</label>
+                    <select id="new-acc-rank" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs"></select>
+                  </div>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">กลุ่มสาระการเรียนรู้</label>
+                  <select id="new-acc-group" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-2 py-1.5 text-xs"></select>
+                </div>
+
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">วิชาที่ทำการสอน (คั่นด้วยจุลภาค , ได้หลายวิชา)</label>
+                  <input type="text" id="new-acc-subjects" placeholder="เช่น คณิตศาสตร์ ม.1, เพิ่มเติม ม.2" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-1.5 text-xs">
+                </div>
+
+                <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg text-xs font-bold shadow-sm transition">
+                  ➕ สร้างบัญชีครูผู้สอน
+                </button>
+              </form>
+            </div>
+
+            <!-- รายการบัญชีครูทั้งหมด -->
+            <div class="lg:col-span-2 bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+                <h3 class="text-base font-bold text-slate-900 flex items-center space-x-2">
+                  <span>👨‍🏫</span>
+                  <span>รายชื่อบัญชีครูผู้สอนทั้งหมดในโรงเรียน</span>
+                </h3>
+                <span id="admin-teachers-count" class="text-xs text-slate-500">(0 บัญชี)</span>
+              </div>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="bg-slate-50 text-slate-600 border-b border-slate-200 font-semibold">
+                      <th class="py-2.5 px-3 text-center w-8">#</th>
+                      <th class="py-2.5 px-3">Username</th>
+                      <th class="py-2.5 px-3">Password</th>
+                      <th class="py-2.5 px-3">ชื่อ-สกุล / รายวิชา</th>
+                      <th class="py-2.5 px-3">ตำแหน่ง / วิทยฐานะ</th>
+                      <th class="py-2.5 px-3 text-right">การจัดการ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="table-admin-accounts"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- -------------------------------------------- -->
+        <!-- ส่วนที่ 2: จัดการบัญชีหัวหน้าวิชาการ (ACADEMIC)-->
+        <!-- -------------------------------------------- -->
+        <div id="admin-panel-academic" class="admin-account-panel hidden">
+          <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-purple-900 flex items-center space-x-2">
+                  <span>📚</span>
+                  <span>ระบบจัดการบัญชีหัวหน้ากลุ่มบริหารวิชาการ</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">กำหนดบัญชีสำหรับล็อกอินตรวจและลงนามบันทึกหลังสอนของครูทุกคนในโรงเรียน</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-purple-100 text-purple-800">ฝ่ายวิชาการ</span>
+            </div>
+
+            <!-- กล่องแสดงบัญชีปัจจุบัน -->
+            <div class="p-4 bg-purple-50/60 rounded-xl border border-purple-200 flex items-center justify-between">
+              <div>
+                <div class="text-xs text-purple-600 font-semibold uppercase tracking-wider">บัญชีผู้ใช้ปัจจุบัน</div>
+                <div id="info-academic-name" class="text-base font-bold text-slate-900 mt-0.5">-</div>
+                <div id="info-academic-creds" class="text-xs text-slate-600 mt-0.5">Username: <b class="font-mono">academic</b> | Password: <b class="font-mono">academic</b></div>
+              </div>
+              <div class="w-12 h-12 bg-purple-100 text-purple-600 rounded-xl flex items-center justify-center text-2xl">
+                📚
+              </div>
+            </div>
+
+            <form id="form-admin-academic" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+                  <input type="text" id="academic-acc-username" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm font-mono">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่าน (Password) <span class="text-red-500">*</span></label>
+                  <input type="text" id="academic-acc-password" required placeholder="เปลี่ยนรหัสผ่านใหม่" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm font-mono">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล หัวหน้ากลุ่มบริหารวิชาการ <span class="text-red-500">*</span></label>
+                <input type="text" id="academic-acc-name" required placeholder="เช่น นางสาวกัญญา พัฒนวิชาการ" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง</label>
+                  <select id="academic-acc-position" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm"></select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">วิทยฐานะ</label>
+                  <select id="academic-acc-rank" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm"></select>
+                </div>
+              </div>
+
+              <p class="text-xs text-slate-400">💡 หมายเหตุ: ระบบจะซิงค์ชื่อหัวหน้าฝ่ายวิชาการไปยังข้อมูลโรงเรียนและกล่องลงนามเอกสาร A4 ให้อัตโนมัติ</p>
+
+              <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-lg text-sm font-bold shadow-sm transition">
+                💾 บันทึกข้อมูลบัญชีหัวหน้ากลุ่มบริหารวิชาการ
+              </button>
+            </form>
+          </div>
+        </div>
+
+        <!-- -------------------------------------------- -->
+        <!-- ส่วนที่ 3: จัดการบัญชีผู้อำนวยการ (DIRECTOR)   -->
+        <!-- -------------------------------------------- -->
+        <div id="admin-panel-director" class="admin-account-panel hidden">
+          <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl border border-slate-200 shadow-sm space-y-6">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+              <div>
+                <h3 class="text-base font-bold text-emerald-900 flex items-center space-x-2">
+                  <span>🏫</span>
+                  <span>ระบบจัดการบัญชีผู้อำนวยการโรงเรียน</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">กำหนดบัญชีสำหรับล็อกอินตรวจและอนุมัติบันทึกหลังสอนของครูทุกคนในโรงเรียน</p>
+              </div>
+              <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">ผู้อำนวยการ</span>
+            </div>
+
+            <!-- กล่องแสดงบัญชีปัจจุบัน -->
+            <div class="p-4 bg-emerald-50/60 rounded-xl border border-emerald-200 flex items-center justify-between">
+              <div>
+                <div class="text-xs text-emerald-600 font-semibold uppercase tracking-wider">บัญชีผู้ใช้ปัจจุบัน</div>
+                <div id="info-director-name" class="text-base font-bold text-slate-900 mt-0.5">-</div>
+                <div id="info-director-creds" class="text-xs text-slate-600 mt-0.5">Username: <b class="font-mono">director</b> | Password: <b class="font-mono">director</b></div>
+              </div>
+              <div class="w-12 h-12 bg-emerald-100 text-emerald-600 rounded-xl flex items-center justify-center text-2xl">
+                🏫
+              </div>
+            </div>
+
+            <form id="form-admin-director" class="space-y-4">
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อผู้ใช้ (Username) <span class="text-red-500">*</span></label>
+                  <input type="text" id="director-acc-username" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm font-mono">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่าน (Password) <span class="text-red-500">*</span></label>
+                  <input type="text" id="director-acc-password" required placeholder="เปลี่ยนรหัสผ่านใหม่" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm font-mono">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อ - นามสกุล ผู้อำนวยการโรงเรียน <span class="text-red-500">*</span></label>
+                <input type="text" id="director-acc-name" required placeholder="เช่น ดร.สุรศักดิ์ ศรีวิริยะ" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">ตำแหน่ง</label>
+                  <input type="text" id="director-acc-position" value="ผู้อำนวยการโรงเรียน" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2 text-sm">
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">วิทยฐานะ</label>
+                  <select id="director-acc-rank" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm"></select>
+                </div>
+              </div>
+
+              <p class="text-xs text-slate-400">💡 หมายเหตุ: ระบบจะซิงค์ชื่อผู้อำนวยการไปยังข้อมูลโรงเรียนและกล่องลงนามเอกสาร A4 ให้อัตโนมัติ</p>
+
+              <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white py-2.5 rounded-lg text-sm font-bold shadow-sm transition">
+                💾 บันทึกข้อมูลบัญชีผู้อำนวยการโรงเรียน
+              </button>
+            </form>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 6: ข้อมูลพื้นฐานโรงเรียน (SETTINGS)    -->
+    <!-- ========================================== -->
+    <div id="tab-settings" class="tab-content hidden">
+      <div class="max-w-4xl mx-auto space-y-6">
+        
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center space-x-2">
+            <span>🏫</span>
+            <span>ข้อมูลพื้นฐานของโรงเรียน</span>
+          </h3>
+
+          <form id="school-settings-form" class="space-y-4">
+            <!-- Logo โรงเรียน -->
+            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
+              <label class="block text-xs font-bold text-slate-700 mb-2">Logo ของโรงเรียน (แสดงบนหัวเอกสารบันทึกหลังสอน)</label>
+              <div class="flex items-center space-x-4">
+                <div class="w-20 h-20 bg-white border-2 border-dashed border-slate-300 rounded-xl flex items-center justify-center overflow-hidden relative">
+                  <img id="preview-logo-img" src="" alt="School Logo" class="w-full h-full object-contain hidden" />
+                  <span id="logo-placeholder" class="text-2xl text-slate-300">🏫</span>
+                </div>
+                <div class="space-y-2">
+                  <label class="inline-block bg-white hover:bg-slate-100 text-blue-600 border border-blue-300 px-3.5 py-1.5 rounded-lg text-xs font-semibold cursor-pointer shadow-sm transition">
+                    <span>📁 เลือกไฟล์รูปภาพ Logo</span>
+                    <input type="file" id="input-school-logo" accept="image/*" class="hidden">
+                  </label>
+                  <button type="button" id="btn-remove-logo" class="hidden block text-xs text-red-600 hover:text-red-700 font-medium">
+                    ❌ ลบ Logo
+                  </button>
+                  <p class="text-[11px] text-slate-400">รองรับไฟล์ PNG, JPG, GIF หรือ WebP</p>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อโรงเรียน</label>
+              <input type="text" id="setting-school-name" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm font-semibold">
+            </div>
+
+            <div>
+              <label class="block text-xs font-semibold text-slate-700 mb-1">ที่อยู่โรงเรียน / หน่วยงานต้นสังกัด</label>
+              <textarea id="setting-school-address" rows="2" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm"></textarea>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อหัวหน้ากลุ่มบริหารงานวิชาการ</label>
+                <input type="text" id="setting-academic-head" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่งหัวหน้าวิชาการ</label>
+                <input type="text" id="setting-academic-head-title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ชื่อผู้อำนวยการโรงเรียน</label>
+                <input type="text" id="setting-director-name" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-slate-700 mb-1">ตำแหน่งผู้อำนวยการโรงเรียน</label>
+                <input type="text" id="setting-director-title" class="w-full bg-slate-50 border border-slate-200 rounded-lg px-3.5 py-2 text-sm">
+              </div>
+            </div>
+
+            <div class="pt-3">
+              <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium shadow-sm transition">
+                บันทึกข้อมูลพื้นฐาน
+              </button>
+            </div>
+          </form>
+        </div>
+
+        <!-- สำรอง / กู้คืนข้อมูล -->
+        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+          <h3 class="text-base font-bold text-slate-900 border-b border-slate-100 pb-3 mb-4 flex items-center space-x-2">
+            <span>💾</span>
+            <span>ระบบสำรองและกู้คืนข้อมูล (Backup & Restore)</span>
+          </h3>
+          <p class="text-xs text-slate-500 mb-4">
+            ดาวน์โหลดฐานข้อมูลสำรองเก็บไว้ในเครื่องคอมพิวเตอร์ของคุณเพื่อความปลอดภัย
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <button type="button" id="btn-optimize-storage" class="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2.5 rounded-lg text-xs font-medium shadow-sm transition flex items-center space-x-2" title="สแกนและลดขนาดรูปภาพเก่าทั้งหมด คืนพื้นที่ว่างในเบราว์เซอร์ทันที">
+              <span>🧹</span>
+              <span>บีบอัดรูปภาพและคืนพื้นที่ว่าง (Optimize Storage)</span>
+            </button>
+
+            <button type="button" id="btn-backup-data" class="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2.5 rounded-lg text-xs font-medium shadow-sm transition flex items-center space-x-2">
+              <span>⬇️</span>
+              <span>สำรองข้อมูลทั้งหมด (ดาวน์โหลด JSON)</span>
+            </button>
+
+            <label class="bg-slate-100 hover:bg-slate-200 text-slate-800 border border-slate-300 px-4 py-2.5 rounded-lg text-xs font-medium cursor-pointer shadow-sm transition flex items-center space-x-2">
+              <span>⬆️</span>
+              <span>นำเข้าข้อมูลสำรอง (Restore JSON)</span>
+              <input type="file" id="input-restore-file" accept=".json" class="hidden">
+            </label>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- FOOTER: สถิติผู้เข้าเยี่ยมชมเว็บไซต์แบบเรียลไทม์ & ลิขสิทธิ์ -->
+  <!-- ======================================================== -->
+  <footer id="app-footer" class="no-print mt-auto w-full bg-slate-900 border-t border-slate-800 text-slate-300">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+      <!-- ส่วนสถิติผู้เข้าเยี่ยมชมเว็บไซต์แบบเรียลไทม์ -->
+      <div class="bg-slate-800/80 border border-slate-700/80 rounded-2xl p-5 sm:p-6 shadow-xl mb-6 backdrop-blur-xs">
+        
+        <!-- ส่วนหัวสถิติพร้อมสถานะเรียลไทม์ -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-700/80 gap-3 mb-5">
+          <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600/20 border border-blue-500/40 text-blue-400 rounded-xl flex items-center justify-center text-xl shadow-xs">
+              📊
+            </div>
+            <div>
+              <h4 class="text-base font-bold text-white tracking-wide flex items-center gap-2">
+                <span>สถิติผู้เข้าเยี่ยมชมเว็บไซต์</span>
+              </h4>
+              <p class="text-xs text-slate-400">ระบบบันทึกและรายงานข้อมูลการเข้าใช้งานแบบเรียลไทม์ (Real-time Analytics)</p>
+            </div>
+          </div>
+
+          <div class="inline-flex items-center space-x-2 bg-emerald-950/80 text-emerald-400 border border-emerald-700/60 px-3 py-1.5 rounded-full text-xs font-semibold shadow-xs self-start sm:self-auto">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span>ออนไลน์เรียลไทม์ (Live)</span>
+          </div>
+        </div>
+
+        <!-- กริดสถิติ 6 ช่อง (วันนี้, เมื่อวานนี้, 1 สัปดาห์, 1 เดือน, 1 ปี, ทั้งหมด) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+          
+          <!-- ผู้เข้าชมวันนี้ -->
+          <div class="bg-slate-900/90 border border-slate-700/70 hover:border-blue-500/60 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-slate-400 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>📅</span>
+              <span>ผู้เข้าชมวันนี้ :</span>
+            </div>
+            <div class="text-xl font-bold text-white">
+              <span id="stat-visitor-today">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+          <!-- ผู้เข้าชมเมื่อวานนี้ -->
+          <div class="bg-slate-900/90 border border-slate-700/70 hover:border-blue-500/60 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-slate-400 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>⏳</span>
+              <span>ผู้เข้าชมเมื่อวานนี้ :</span>
+            </div>
+            <div class="text-xl font-bold text-white">
+              <span id="stat-visitor-yesterday">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+          <!-- ผู้เข้าชมสัปดาห์ที่ผ่านมา -->
+          <div class="bg-slate-900/90 border border-slate-700/70 hover:border-blue-500/60 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-slate-400 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>📆</span>
+              <span>ผู้เข้าชมสัปดาห์ที่ผ่านมา :</span>
+            </div>
+            <div class="text-xl font-bold text-white">
+              <span id="stat-visitor-week">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+          <!-- ผู้เข้าชม 1 เดือนที่ผ่านมา -->
+          <div class="bg-slate-900/90 border border-slate-700/70 hover:border-blue-500/60 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-slate-400 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>🗓️</span>
+              <span>ผู้เข้าชม 1 เดือนที่ผ่านมา :</span>
+            </div>
+            <div class="text-xl font-bold text-white">
+              <span id="stat-visitor-month">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+          <!-- ผู้เข้าชม 1 ปีที่ผ่านมา -->
+          <div class="bg-slate-900/90 border border-slate-700/70 hover:border-blue-500/60 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-slate-400 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>📈</span>
+              <span>ผู้เข้าชม 1 ปีที่ผ่านมา :</span>
+            </div>
+            <div class="text-xl font-bold text-white">
+              <span id="stat-visitor-year">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+          <!-- จำนวนผู้เข้าชมทั้งหมด -->
+          <div class="bg-slate-900/90 border border-amber-600/40 hover:border-amber-500 transition-all rounded-xl p-3.5 text-center shadow-xs">
+            <div class="text-xs text-amber-300/90 flex items-center justify-center space-x-1.5 mb-1.5">
+              <span>🌐</span>
+              <span>จำนวนผู้เข้าชมทั้งหมด :</span>
+            </div>
+            <div class="text-xl font-extrabold text-amber-400">
+              <span id="stat-visitor-total">0</span>
+              <span class="text-xs font-normal text-slate-400 ml-0.5">คน</span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- แถบสถานะออนไลน์ขณะนี้ และ รายชื่อครูผู้เข้าใช้งาน -->
+        <div class="bg-slate-900/80 border border-slate-700/80 rounded-xl p-4 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+          
+          <!-- จำนวนผู้เข้าชมขณะนี้ -->
+          <div class="flex items-center space-x-3 w-full md:w-auto justify-center md:justify-start">
+            <div class="flex items-center space-x-2 text-slate-200 font-semibold">
+              <span class="text-emerald-400 text-sm">🟢</span>
+              <span>จำนวนผู้เข้าชมขณะนี้ :</span>
+            </div>
+            <div class="bg-emerald-500/20 text-emerald-300 font-bold px-3 py-1 rounded-lg border border-emerald-500/40 text-sm flex items-center space-x-1">
+              <span id="stat-visitor-online">1</span>
+              <span class="text-xs font-normal text-emerald-400">คน</span>
+            </div>
+          </div>
+
+          <!-- ผู้ที่เข้าชมขณะนี้ (จากชื่อครูผู้เข้าใช้งาน) -->
+          <div class="flex items-center space-x-2.5 w-full md:w-auto justify-center md:justify-end flex-wrap">
+            <div class="flex items-center space-x-1.5 text-slate-200 font-semibold">
+              <span class="text-blue-400 text-sm">👥</span>
+              <span>ผู้ที่เข้าชมขณะนี้ :</span>
+            </div>
+            <div id="stat-visitor-teachers" class="inline-flex items-center gap-1.5 flex-wrap">
+              <span class="text-slate-400 italic text-xs">กำลังเชื่อมต่อ...</span>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- ส่วนลิขสิทธิ์และข้อมูลผู้พัฒนา -->
+      <div class="border-t border-slate-800 pt-6 flex flex-col md:flex-row items-center justify-between text-xs text-slate-400 gap-4 text-center md:text-left">
+        <div>
+          <div class="text-slate-200 font-semibold mb-1 text-sm flex items-center justify-center md:justify-start gap-1.5">
+            <span>Copyright © 2026</span>
+          </div>
+          <div class="text-slate-300 leading-relaxed">
+            <b>พัฒนาโดย :</b> ครูเสกสรร  แหวเมือง ครูโรงเรียนบ้านสามเงา สังกัดสำนักงานเขตพื้นที่การศึกษาประถมศึกษาตาก เขต 1
+          </div>
+        </div>
+
+        <div class="flex items-center space-x-2.5 bg-slate-800/90 border border-slate-700/80 px-4 py-2.5 rounded-xl text-slate-300 shadow-xs">
+          <span class="text-base">📞</span>
+          <span class="text-slate-300">แจ้งปัญหาการใช้งาน/สอบถามเพิ่ม :</span>
+          <a href="tel:0933067309" class="text-amber-400 hover:text-amber-300 font-bold underline transition flex items-center space-x-1">
+            <span>โทร. 0933067309</span>
+          </a>
+        </div>
+      </div>
+
+    </div>
+  </footer>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 1: เข้าสู่ระบบ (LOGIN MODAL)                       -->
+  <!-- ======================================================== -->
+  <div id="login-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl animate-fade-in">
+      <div class="text-center mb-6">
+        <div class="w-14 h-14 bg-blue-600 text-white rounded-2xl flex items-center justify-center text-3xl mx-auto mb-3 shadow-md">
+          🏫
+        </div>
+        <h2 class="text-xl font-bold text-slate-900">เข้าสู่ระบบบันทึกหลังสอน</h2>
+        <p class="text-xs text-slate-500 mt-1">กรุณาระบุชื่อผู้ใช้และรหัสผ่านเพื่อเข้าใช้งาน</p>
+      </div>
+
+      <form id="login-form" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">ชื่อผู้ใช้ (Username)</label>
+          <input type="text" id="login-username" required placeholder="ระบุ Username" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm">
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">รหัสผ่าน (Password)</label>
+          <input type="password" id="login-password" required placeholder="ระบุ Password" class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3.5 py-2.5 text-sm">
+        </div>
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm shadow transition">
+          เข้าสู่ระบบ
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 2: ตรวจและลงนาม (REVIEW & SIGNATURE MODAL)         -->
+  <!-- ======================================================== -->
+  <div id="review-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl animate-fade-in">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <h3 id="review-modal-title" class="font-bold text-slate-900 text-base">✍️ ตรวจและแสดงความคิดเห็น</h3>
+        <button type="button" onclick="window.app.closeReviewModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      </div>
+
+      <div class="mb-4 bg-slate-50 p-3 rounded-lg border border-slate-200 text-xs text-slate-700 space-y-1">
+        <div><b>ครูผู้สอน:</b> <span id="review-modal-teacher">-</span></div>
+        <div><b>เรื่อง:</b> <span id="review-modal-topic">-</span></div>
+      </div>
+
+      <form id="form-review-modal" class="space-y-4">
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-700">ความคิดเห็น / ข้อเสนอแนะ</label>
+            <div class="flex gap-1">
+              <button type="button" class="btn-review-preset text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded transition" data-text="รับทราบผลการจัดการเรียนรู้ กระบวนการวัดและประเมินผลมีความเหมาะสม">
+                รับทราบ/เหมาะสม
+              </button>
+              <button type="button" class="btn-review-preset text-[11px] bg-slate-100 hover:bg-slate-200 text-slate-700 px-2 py-0.5 rounded transition" data-text="ทราบและเห็นชอบตามแนวทางแก้ไข ขอชื่นชมในความตั้งใจ">
+                เห็นชอบ
+              </button>
+            </div>
+          </div>
+          <textarea id="review-modal-comment" rows="3" required class="w-full bg-slate-50 border border-slate-300 rounded-lg p-3 text-sm"></textarea>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">วันที่ตรวจ / ลงนาม</label>
+          <input type="date" id="review-modal-signdate" required class="w-full bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-sm">
+        </div>
+
+        <div class="p-3.5 bg-slate-50 rounded-xl border border-slate-200">
+          <label class="block text-xs font-bold text-slate-700 mb-2">อัปโหลดลายมือชื่ออิเล็กทรอนิกส์ (Signature)</label>
+          <div class="flex items-center space-x-3">
+            <div class="w-32 h-14 bg-white border border-slate-300 rounded-lg flex items-center justify-center p-1 overflow-hidden">
+              <img id="preview-review-sig" src="" alt="ลายเซ็น" class="max-h-full max-w-full object-contain hidden" />
+            </div>
+            <div>
+              <div class="flex items-center space-x-2">
+                <label class="inline-block bg-white hover:bg-slate-100 text-blue-600 border border-blue-300 px-3 py-1.5 rounded-lg text-xs font-semibold cursor-pointer shadow-sm transition">
+                  <span>📁 เลือกรูปลายเซ็น</span>
+                  <input type="file" id="review-modal-sigfile" accept="image/*" class="hidden">
+                </label>
+                <button type="button" id="btn-delete-review-sig" class="hidden text-xs bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 px-2.5 py-1.5 rounded-lg font-medium transition">
+                  ❌ ลบลายเซ็น
+                </button>
+              </div>
+              <p class="text-[11px] text-slate-400 mt-1">รูปลายเซ็นจะถูกประทับลงในเอกสาร A4 (หากมี)</p>
+            </div>
+          </div>
+
+          <div class="mt-3 pt-2.5 border-t border-slate-200 flex items-center justify-between">
+            <label for="review-modal-stamp-sig" class="text-xs font-medium text-slate-700 cursor-pointer flex items-center space-x-2">
+              <input type="checkbox" id="review-modal-stamp-sig" checked class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+              <span>ประทับรูปลายเซ็นลงในเอกสาร A4 (หากไม่เลือก จะเว้นว่างสำหรับเซ็นสดด้วยปากกา)</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="window.app.closeReviewModal()" class="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-lg text-sm font-medium transition">
+            ยกเลิก
+          </button>
+          <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg text-sm font-bold shadow transition">
+            ✍️ บันทึกการตรวจและลงนาม
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 3: พรีวิวเอกสารพิมพ์ A4 (STRICT 1 PAGE A4)         -->
+  <!-- ======================================================== -->
+  <div id="print-preview-modal" class="fixed inset-0 z-50 overflow-y-auto p-4 hidden flex items-center justify-center">
+    <div class="bg-slate-800 text-white rounded-2xl max-w-5xl w-full mx-auto overflow-hidden shadow-2xl flex flex-col max-h-[92vh]">
+      
+      <div class="print-modal-header px-6 py-3.5 bg-slate-900 border-b border-slate-700 flex items-center justify-between">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <span>🖨️</span>
+            <span>ตัวอย่างเอกสารบันทึกหลังสอน (ขนาด 1 หน้า A4 ราชการ)</span>
+          </h3>
+          <p class="text-xs text-slate-400">จัดหน้าพอดี 1 หน้ากระดาษ พร้อมรูปกิจกรรม 2 รูป และลายเซ็นดิจิทัล</p>
+        </div>
+
+        <div class="flex items-center space-x-2">
+          <button id="btn-do-print" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-semibold shadow-md transition flex items-center space-x-1.5">
+            <span>🖨️</span>
+            <span>สั่งพิมพ์ / บันทึกเป็น PDF</span>
+          </button>
+          <button id="btn-close-print-modal" class="bg-slate-700 hover:bg-slate-600 text-slate-300 px-3 py-2 rounded-lg text-sm transition">
+            ✕ ปิด
+          </button>
+        </div>
+      </div>
+
+      <!-- แถบเลือกให้ปรากฏหรือไม่ปรากฏลายเซ็นทั้ง 3 ช่องในเอกสาร A4 -->
+      <div class="px-6 py-2.5 bg-slate-800 border-b border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs text-slate-300 no-print">
+        <div class="flex items-center space-x-2 font-medium">
+          <span class="text-amber-400 font-bold">✍️ เลือกลายเซ็นที่จะให้ปรากฏในเอกสาร A4:</span>
+        </div>
+        <div class="flex flex-wrap items-center gap-3">
+          <label class="inline-flex items-center space-x-1.5 cursor-pointer bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-600 hover:border-blue-400 transition">
+            <input type="checkbox" id="print-toggle-sig-teacher" checked class="w-3.5 h-3.5 text-blue-600 rounded">
+            <span>1. ครูผู้สอน</span>
+          </label>
+          <label class="inline-flex items-center space-x-1.5 cursor-pointer bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-600 hover:border-purple-400 transition">
+            <input type="checkbox" id="print-toggle-sig-academic" checked class="w-3.5 h-3.5 text-blue-600 rounded">
+            <span>2. หัวหน้าวิชาการ</span>
+          </label>
+          <label class="inline-flex items-center space-x-1.5 cursor-pointer bg-slate-900/80 px-2.5 py-1 rounded-md border border-slate-600 hover:border-emerald-400 transition">
+            <input type="checkbox" id="print-toggle-sig-director" checked class="w-3.5 h-3.5 text-blue-600 rounded">
+            <span>3. ผู้อำนวยการ</span>
+          </label>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-300">
+        <div id="print-document-container" class="mx-auto"></div>
+      </div>
+
+      <div class="print-modal-footer px-6 py-2.5 bg-slate-900 border-t border-slate-700 flex items-center justify-between text-xs text-slate-400">
+        <span>💡 คำแนะนำ: ในหน้าต่างพิมพ์ ให้เลือกเครื่องพิมพ์เป็น <b>"Save as PDF"</b> เพื่อบันทึกเป็นไฟล์ PDF คุณภาพสูง (1 หน้าพอดี)</span>
+        <button onclick="window.printMgr.closePreview()" class="text-slate-300 hover:text-white underline">ปิด</button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 4: ติดตามความถี่การส่งบันทึกหลังสอนของครู            -->
+  <!-- ======================================================== -->
+  <div id="modal-teacher-frequency" class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-4xl w-full p-6 shadow-2xl animate-fade-in max-h-[90vh] flex flex-col">
+      <div class="flex items-center justify-between border-b border-slate-100 pb-3 mb-4">
+        <div class="flex items-center space-x-2.5">
+          <span class="text-2xl">📊</span>
+          <div>
+            <h3 class="font-bold text-slate-900 text-base">สถิติติดตามความถี่และความสม่ำเสมอในการส่งบันทึกหลังสอน</h3>
+            <p class="text-xs text-slate-500">ระบบตรวจสอบความต่อเนื่องและสถานะการส่งบันทึกของครูผู้สอนทุกคนในโรงเรียน</p>
+          </div>
+        </div>
+        <button type="button" onclick="window.dashboardMgr.closeFrequencyModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">✕</button>
+      </div>
+
+      <!-- สรุปภาพรวม KPI -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+        <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 text-center">
+          <div class="text-xs text-slate-500 mb-1">ครูทั้งหมดในระบบ</div>
+          <div id="freq-total-teachers" class="text-xl font-bold text-slate-800">0 ท่าน</div>
+        </div>
+        <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-center">
+          <div class="text-xs text-emerald-700 font-medium mb-1">🟢 ส่งสม่ำเสมอ (ใน 2 วัน)</div>
+          <div id="freq-count-good" class="text-xl font-bold text-emerald-700">0 ท่าน</div>
+        </div>
+        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-center">
+          <div class="text-xs text-amber-700 font-medium mb-1">🟡 เริ่มทิ้งช่วง (3-4 วัน)</div>
+          <div id="freq-count-warn" class="text-xl font-bold text-amber-700">0 ท่าน</div>
+        </div>
+        <div class="bg-red-50 border border-red-200 rounded-xl p-3 text-center">
+          <div class="text-xs text-red-700 font-medium mb-1">🔴 ขาดส่ง (≥ 5 วัน / ยังไม่ส่ง)</div>
+          <div id="freq-count-danger" class="text-xl font-bold text-red-700">0 ท่าน</div>
+        </div>
+      </div>
+
+      <!-- ตารางรายชื่อครูและสถานะความถี่ -->
+      <div class="flex-1 overflow-y-auto border border-slate-200 rounded-xl">
+        <table class="w-full text-left border-collapse text-xs sm:text-sm">
+          <thead class="bg-slate-50 sticky top-0 border-b border-slate-200 text-slate-700 font-semibold">
+            <tr>
+              <th class="py-2.5 px-3 text-center w-12">ที่</th>
+              <th class="py-2.5 px-3">ครูผู้สอน</th>
+              <th class="py-2.5 px-3 text-center w-28">ส่งแล้วทั้งหมด</th>
+              <th class="py-2.5 px-3">แผนการสอนล่าสุด</th>
+              <th class="py-2.5 px-3">วันที่ส่งล่าสุด</th>
+              <th class="py-2.5 px-3 text-center w-52">สถานะความถี่การส่ง</th>
+            </tr>
+          </thead>
+          <tbody id="table-teacher-frequency-body">
+            <!-- Dynamic rows generated by JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex items-center justify-between pt-4 border-t border-slate-100 mt-4 text-xs text-slate-500">
+        <span>💡 ระบบจะแจ้งเตือนอัตโนมัติไปยังหน้าจอครูผู้สอนทันทีเมื่อเข้าสู่ระบบหากขาดส่ง ≥ 5 วัน</span>
+        <button type="button" onclick="window.dashboardMgr.closeFrequencyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-lg text-xs font-semibold transition">
+          ปิดหน้าต่าง
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- MODAL 5: แจ้งเตือนครูผู้สอนเมื่อขาดส่งบันทึก >= 5 วัน      -->
+  <!-- ======================================================== -->
+  <div id="modal-teacher-alert" class="fixed inset-0 z-50 overflow-y-auto p-4 flex items-center justify-center bg-slate-900/80 backdrop-blur-sm hidden">
+    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl animate-fade-in text-center border-t-4 border-amber-500">
+      <div class="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 shadow-sm animate-bounce">
+        🔔
+      </div>
+      
+      <h3 class="text-lg font-bold text-slate-900 mb-1">
+        แจ้งเตือนการบันทึกหลังการจัดการเรียนรู้
+      </h3>
+      <p class="text-xs text-slate-500 mb-4">
+        ข้อความสื่อสารจากฝ่ายบริหารและผู้อำนวยการโรงเรียน
+      </p>
+
+      <div class="p-4 bg-amber-50/80 border border-amber-200 rounded-xl mb-5 text-sm text-slate-800 text-left leading-relaxed">
+        <div class="flex items-start space-x-2.5">
+          <span class="text-lg">📢</span>
+          <div>
+            <p id="teacher-alert-message" class="font-bold text-slate-900 text-base leading-snug">
+              "คุณครูไม่ได้บันทึกหลังแผนมา 5 วันแล้ว รีบดำเนินการด้วยนะครับ ผู้อำนวยการกำลังติดตาม ขอบคุณครับ"
+            </p>
+            <p class="text-xs text-slate-500 mt-2">
+              กรุณาบันทึกข้อมูลหลังสอนและแนบภาพถ่ายกิจกรรม เพื่อให้ข้อมูลการจัดการเรียนรู้เป็นปัจจุบันและพร้อมรับการตรวจอนุมัติครับ
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-2">
+        <button type="button" onclick="window.app.closeTeacherAlertModal()" class="flex-1 py-2.5 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition">
+          รับทราบ
+        </button>
+        <button type="button" onclick="window.app.goToFormFromAlert()" class="flex-1 py-2.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs shadow-md transition flex items-center justify-center space-x-1.5">
+          <span>📝</span>
+          <span>ไปบันทึกหลังสอนทันที</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container"></div>
+
+  <!-- Scripts -->
+  <script src="js/storage.js"></script>
+  <script src="js/visitor-tracker.js"></script>
+  <script src="js/print.js"></script>
+  <script src="js/form.js"></script>
+  <script src="js/dashboard.js"></script>
+  <script src="js/app.js"></script>
+
+</body>
+</html>
