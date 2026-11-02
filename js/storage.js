@@ -150,57 +150,6 @@ const DEFAULT_ACCOUNTS = [
     profilePhoto: null,
     signatureImg: null,
     createdAt: new Date().toISOString()
-  },
-  // 4. บัญชีครูตัวอย่าง 1
-  {
-    id: 'acc_t1',
-    username: 'kru1',
-    password: '123',
-    role: 'teacher',
-    name: 'นายวีระชัย สอนดี',
-    position: 'ครู',
-    rank: 'ครูชำนาญการ',
-    subjectGroup: 'คณิตศาสตร์',
-    subjects: 'คณิตศาสตร์พื้นฐาน, คณิตศาสตร์เพิ่มเติม, เสริมทักษะคณิตศาสตร์',
-    activeSubject: 'คณิตศาสตร์พื้นฐาน',
-    activityHours: '1 ชั่วโมง',
-    profilePhoto: null,
-    signatureImg: null,
-    createdAt: new Date().toISOString()
-  },
-  // 5. บัญชีครูตัวอย่าง 2 (ครูอัตราจ้าง)
-  {
-    id: 'acc_t2',
-    username: 'kru2',
-    password: '123',
-    role: 'teacher',
-    name: 'นางสาวพิมพ์ใจ ใฝ่รู้',
-    position: 'ครูอัตราจ้าง',
-    rank: 'ไม่มีวิทยฐานะ',
-    subjectGroup: 'ภาษาไทย',
-    subjects: 'ภาษาไทยพื้นฐาน, วรรณคดีวิจักษ์, การอ่านจับใจความ',
-    activeSubject: 'ภาษาไทยพื้นฐาน',
-    activityHours: '1 ชั่วโมง',
-    profilePhoto: null,
-    signatureImg: null,
-    createdAt: new Date().toISOString()
-  },
-  // 6. บัญชีครูผู้พัฒนา (ครูเสกสรร แหวเมือง)
-  {
-    id: 'acc_seksan',
-    username: 'seksan',
-    password: '123',
-    role: 'teacher',
-    name: 'ครูเสกสรร แหวเมือง',
-    position: 'ครู',
-    rank: 'ไม่มีวิทยฐานะ',
-    subjectGroup: 'วิทยาศาสตร์และเทคโนโลยี',
-    subjects: 'วิทยาการคำนวณ, เทคโนโลยี (วิทยาการคำนวณ), คอมพิวเตอร์',
-    activeSubject: 'วิทยาการคำนวณ',
-    activityHours: '1 ชั่วโมง',
-    profilePhoto: null,
-    signatureImg: null,
-    createdAt: new Date().toISOString()
   }
 ];
 
@@ -215,50 +164,8 @@ const DEFAULT_SETTINGS = {
   directorTitle: 'ผู้อำนวยการโรงเรียน วิทยฐานะชำนาญการพิเศษ'
 };
 
-// บันทึกตัวอย่าง
-const DEFAULT_RECORDS = [
-  {
-    id: 'rec_1001',
-    teacherId: 'acc_t1',
-    teacherUsername: 'kru1',
-    teacherName: 'นายวีระชัย สอนดี',
-    teacherPosition: 'ครู วิทยฐานะครูชำนาญการ',
-    teacherSignature: null,
-    semester: '1',
-    academicYear: '2567',
-    date: new Date().toISOString().split('T')[0],
-    unit: '1',
-    planNo: '4',
-    topic: 'การบวก ลบเศษส่วนที่มีตัวส่วนไม่เท่ากัน',
-    grade: 'ชั้นประถมศึกษาปีที่ 5',
-    subject: 'คณิตศาสตร์พื้นฐาน',
-    hours: '1 ชั่วโมง',
-    activityPhoto1: null,
-    activityPhoto2: null,
-    knowledge: {
-      totalStudents: 32,
-      level1Count: 2, level1Pct: 6.25,
-      level2Count: 5, level2Pct: 15.63,
-      level3Count: 17, level3Pct: 53.13,
-      level4Count: 8, level4Pct: 25.00
-    },
-    skill: 'นักเรียนสามารถแสดงวิธีทำและหาคำตอบของการบวก ลบเศษส่วนที่มีตัวส่วนไม่เท่ากันได้อย่างถูกต้องตามขั้นตอน มีทักษะในการคำนวณและเชื่อมโยงความรู้',
-    attitude: 'นักเรียนมีความกระตือรือร้นและตั้งใจร่วมกิจกรรม มีวินัยและส่งงานตรงต่อเวลา',
-    problem: 'นักเรียนระดับเริ่มต้น 2 คน ยังสับสนเรื่องการหาตัวคูณร่วมน้อย (ค.ร.น.) ของตัวส่วน',
-    solution: 'จัดสอนซ่อมเสริมนอกเวลาโดยใช้สื่อแผนภาพเศษส่วน และให้เพื่อนคู่หูคอยช่วยแนะนำ',
-    teacherSignDate: new Date().toISOString().split('T')[0],
-    academicStatus: 'approved',
-    academicComment: 'รับทราบผลการจัดการเรียนรู้ มีการระบุปัญหาและแนวทางแก้ไขเรื่องเศษส่วนอย่างชัดเจน กิจกรรมซ่อมเสริมมีความเหมาะสม',
-    academicSignature: null,
-    academicSignDate: new Date().toISOString().split('T')[0],
-    directorStatus: 'approved',
-    directorComment: 'ทราบและเห็นชอบตามข้อเสนอแนะ ขอชื่นชมในการเอาใจใส่นักเรียนเพื่อไม่ให้มีเด็กตกหล่นในทักษะคณิตศาสตร์',
-    directorSignature: null,
-    directorSignDate: new Date().toISOString().split('T')[0],
-    createdAt: new Date(Date.now() - 86400000 * 2).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000 * 2).toISOString()
-  }
-];
+// บันทึกตัวอย่างเริ่มต้น (เริ่มต้นว่างเปล่า เพื่อรอคุณครูที่ลงทะเบียนจริงบันทึกข้อมูล)
+const DEFAULT_RECORDS = [];
 
 class StorageManager {
   constructor() {
@@ -287,19 +194,28 @@ class StorageManager {
         accs.push(DEFAULT_ACCOUNTS[2]);
         changed = true;
       }
-      if (!accs.some(a => a.username === 'seksan')) {
-        const seksanAcc = DEFAULT_ACCOUNTS.find(a => a.username === 'seksan');
-        if (seksanAcc) {
-          accs.push(seksanAcc);
-          changed = true;
-        }
+
+      // ลบบัญชีตัวอย่างหรือบัญชีจำลองเดิมที่ระบบเคยสร้างขึ้นเองอัตโนมัติ (เช่น seksan, kru1, kru2)
+      // เพื่อให้รายชื่อบัญชีครูผู้สอนมีเฉพาะที่ Admin ลงทะเบียนสร้างขึ้นมาเท่านั้น
+      const beforeLen = accs.length;
+      accs = accs.filter(a => a.username !== 'seksan' && a.id !== 'acc_seksan' && a.id !== 'acc_t1' && a.id !== 'acc_t2');
+      if (accs.length !== beforeLen) {
+        changed = true;
       }
+
       if (changed) {
         this.saveAccounts(accs);
       }
     }
     if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
       this.saveRecords(DEFAULT_RECORDS);
+    } else {
+      // ลบประวัติตัวอย่างเดิมที่ผูกกับ kru1 (ถ้ามี)
+      let recs = this.getRecords();
+      if (recs.some(r => r.id === 'rec_1001' || r.teacherUsername === 'kru1')) {
+        recs = recs.filter(r => r.id !== 'rec_1001' && r.teacherUsername !== 'kru1');
+        this.saveRecords(recs);
+      }
     }
 
     // รันระบบตรวจสอบและบีบอัดรูปภาพเก่าอัตโนมัติ (Self-Healing Storage Optimizer)

@@ -326,6 +326,34 @@ class App {
         dirRank.appendChild(opt);
       });
     }
+
+    // Dropdowns สำหรับ Modal แก้ไขข้อมูลครูผู้สอนโดย Admin
+    const editPos = document.getElementById('edit-teacher-position');
+    if (editPos && !editPos.children.length) {
+      opts.positions.forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p; opt.textContent = p;
+        editPos.appendChild(opt);
+      });
+    }
+
+    const editRank = document.getElementById('edit-teacher-rank');
+    if (editRank && !editRank.children.length) {
+      opts.ranks.forEach(r => {
+        const opt = document.createElement('option');
+        opt.value = r; opt.textContent = r;
+        editRank.appendChild(opt);
+      });
+    }
+
+    const editGrp = document.getElementById('edit-teacher-group');
+    if (editGrp && !editGrp.children.length) {
+      opts.subjectGroups.forEach(g => {
+        const opt = document.createElement('option');
+        opt.value = g; opt.textContent = g;
+        editGrp.appendChild(opt);
+      });
+    }
   }
 
   renderTeacherSubjectBadges(user) {
@@ -880,6 +908,61 @@ class App {
         }
       });
     }
+
+    // 4. ฟอร์มแก้ไขข้อมูลบัญชีครูผู้สอน (Modal) โดยผู้ดูแลระบบ
+    const formEditTeacher = document.getElementById('form-admin-edit-teacher');
+    if (formEditTeacher) {
+      formEditTeacher.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const id = document.getElementById('edit-teacher-id').value;
+        const username = document.getElementById('edit-teacher-username').value.trim();
+        const password = document.getElementById('edit-teacher-password').value.trim();
+        const name = document.getElementById('edit-teacher-name').value.trim();
+        const position = document.getElementById('edit-teacher-position').value;
+        const rank = document.getElementById('edit-teacher-rank').value;
+        const subjectGroup = document.getElementById('edit-teacher-group').value;
+        const subjects = document.getElementById('edit-teacher-subjects').value.trim();
+
+        if (!id || !username || !password || !name) {
+          this.showToast('กรุณากรอก Username, Password และชื่อ-นามสกุลครูผู้สอน', 'error');
+          return;
+        }
+
+        // ตรวจสอบชื่อผู้ใช้ (Username) ซ้ำกับบัญชีอื่น
+        const accounts = window.storageMgr.getAccounts();
+        const duplicate = accounts.find(a => a.username.trim() === username && a.id !== id);
+        if (duplicate) {
+          this.showToast(`ชื่อผู้ใช้ (Username) "${username}" มีอยู่ในระบบแล้ว กรุณาใช้ชื่ออื่น`, 'error');
+          return;
+        }
+
+        try {
+          const subList = subjects 
+            ? subjects.split(',').map(s => s.trim()).filter(Boolean) 
+            : [subjectGroup || 'ภาษาไทย'];
+
+          window.storageMgr.updateAccount(id, {
+            username,
+            password,
+            name,
+            position,
+            rank,
+            subjectGroup,
+            subjects: subList.join(', '),
+            subjectList: subList,
+            title: position || 'ครูผู้สอน'
+          });
+
+          this.closeEditTeacherModal();
+          this.renderAccountsTable();
+          if (window.formMgr) window.formMgr.populateTeacherDropdown();
+          if (window.dashboardMgr) window.dashboardMgr.updateFilterDropdowns();
+          this.showToast(`บันทึกการแก้ไขข้อมูลบัญชีของ "${name}" สำเร็จ`, 'success');
+        } catch (err) {
+          this.showToast(err.message, 'error');
+        }
+      });
+    }
   }
 
   renderAccountsTable() {
@@ -889,24 +972,37 @@ class App {
     if (countEl) countEl.textContent = `(ทั้งหมด ${teachers.length} บัญชี)`;
 
     if (tbody) {
-      tbody.innerHTML = teachers.map((acc, idx) => {
-        const deleteBtn = `<button onclick="window.app.deleteUserAccount('${acc.id}', '${acc.name}')" class="px-2 py-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition font-medium">ลบ</button>`;
-        const subs = window.storageMgr.getTeacherSubjectList(acc).join(', ') || '-';
-
-        return `
-          <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
-            <td class="py-2.5 px-3 text-center text-slate-400 text-xs">${idx + 1}</td>
-            <td class="py-2.5 px-3 font-semibold text-slate-800 text-xs">${acc.username}</td>
-            <td class="py-2.5 px-3 font-mono text-slate-600 text-xs">${acc.password}</td>
-            <td class="py-2.5 px-3 text-slate-800 text-xs font-medium">
-              <div>${acc.name}</div>
-              <div class="text-[11px] text-slate-500">วิชา: ${subs}</div>
+      if (teachers.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="6" class="text-center py-8 text-slate-400 text-xs">
+              <div class="text-3xl mb-1.5">👨‍🏫</div>
+              <div class="font-bold text-slate-600">ยังไม่มีรายชื่อบัญชีครูผู้สอนในโรงเรียน</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">กรุณาใช้แบบฟอร์ม "ลงทะเบียนสร้างบัญชีครูผู้สอนใหม่" ทางด้านซ้ายมือ</div>
             </td>
-            <td class="py-2.5 px-3 text-slate-600 text-xs">${acc.position || 'ครู'} ${acc.rank && acc.rank !== 'ไม่มีวิทยฐานะ' ? `(${acc.rank})` : ''}</td>
-            <td class="py-2.5 px-3 text-right">${deleteBtn}</td>
           </tr>
         `;
-      }).join('');
+      } else {
+        tbody.innerHTML = teachers.map((acc, idx) => {
+          const editBtn = `<button onclick="window.app.openEditTeacherModal('${acc.id}')" class="px-2 py-1 text-xs bg-amber-50 text-amber-700 hover:bg-amber-100 rounded transition font-medium mr-1 border border-amber-200">✏️ แก้ไข</button>`;
+          const deleteBtn = `<button onclick="window.app.deleteUserAccount('${acc.id}', '${acc.name}')" class="px-2 py-1 text-xs bg-red-50 text-red-600 hover:bg-red-100 rounded transition font-medium border border-red-200">🗑️ ลบ</button>`;
+          const subs = window.storageMgr.getTeacherSubjectList(acc).join(', ') || '-';
+
+          return `
+            <tr class="hover:bg-slate-50 border-b border-slate-100 transition">
+              <td class="py-2.5 px-3 text-center text-slate-400 text-xs">${idx + 1}</td>
+              <td class="py-2.5 px-3 font-semibold text-slate-800 text-xs">${acc.username}</td>
+              <td class="py-2.5 px-3 font-mono text-slate-600 text-xs">${acc.password}</td>
+              <td class="py-2.5 px-3 text-slate-800 text-xs font-medium">
+                <div>${acc.name}</div>
+                <div class="text-[11px] text-slate-500">วิชา: ${subs}</div>
+              </td>
+              <td class="py-2.5 px-3 text-slate-600 text-xs">${acc.position || 'ครู'} ${acc.rank && acc.rank !== 'ไม่มีวิทยฐานะ' ? `(${acc.rank})` : ''}</td>
+              <td class="py-2.5 px-3 text-right whitespace-nowrap">${editBtn}${deleteBtn}</td>
+            </tr>
+          `;
+        }).join('');
+      }
     }
 
     // แสดงข้อมูลในส่วนหัวหน้าวิชาการ
@@ -949,6 +1045,50 @@ class App {
       if (nEl) nEl.value = director.name;
       if (posEl && director.position) posEl.value = director.position;
       if (rankEl && director.rank) rankEl.value = director.rank;
+    }
+  }
+
+  // เปิดหน้าต่าง Modal แก้ไขบัญชีครูผู้สอน
+  openEditTeacherModal(teacherId) {
+    const teacher = window.storageMgr.getAccountById(teacherId);
+    if (!teacher) {
+      this.showToast('ไม่พบข้อมูลบัญชีครูที่ต้องการแก้ไข', 'error');
+      return;
+    }
+
+    this.populateProfileDropdowns();
+
+    const idEl = document.getElementById('edit-teacher-id');
+    const uEl = document.getElementById('edit-teacher-username');
+    const pEl = document.getElementById('edit-teacher-password');
+    const nEl = document.getElementById('edit-teacher-name');
+    const posEl = document.getElementById('edit-teacher-position');
+    const rankEl = document.getElementById('edit-teacher-rank');
+    const grpEl = document.getElementById('edit-teacher-group');
+    const subsEl = document.getElementById('edit-teacher-subjects');
+
+    if (idEl) idEl.value = teacher.id;
+    if (uEl) uEl.value = teacher.username || '';
+    if (pEl) pEl.value = teacher.password || '';
+    if (nEl) nEl.value = teacher.name || '';
+    if (posEl) posEl.value = teacher.position || 'ครู';
+    if (rankEl) rankEl.value = teacher.rank || 'ไม่มีวิทยฐานะ';
+    if (grpEl) grpEl.value = teacher.subjectGroup || 'ภาษาไทย';
+    if (subsEl) subsEl.value = teacher.subjects || '';
+
+    const modal = document.getElementById('modal-admin-edit-teacher');
+    if (modal) {
+      modal.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+  }
+
+  // ปิดหน้าต่าง Modal แก้ไขบัญชีครูผู้สอน
+  closeEditTeacherModal() {
+    const modal = document.getElementById('modal-admin-edit-teacher');
+    if (modal) {
+      modal.classList.add('hidden');
+      document.body.style.overflow = 'auto';
     }
   }
 
