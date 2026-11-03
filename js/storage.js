@@ -173,11 +173,14 @@ class StorageManager {
   }
 
   init() {
+    // 1. ตั้งค่าสำรองในเครื่อง (LocalStorage) หากเปิดใช้งานแบบ Offline หรือยังไม่มีข้อมูล
+    // สำคัญที่สุด: ใช้ localStorage.setItem โดยตรง ห้ามเรียก saveSettings/saveAccounts/saveRecords ในช่วงเริ่มต้น
+    // เพื่อป้องกันไม่ให้เครื่องใหม่หรืออุปกรณ์ที่เพิ่งเปิด ส่งข้อมูลว่างเปล่า/ค่าเริ่มต้นไปทับบน Cloud (Firebase)
     if (!localStorage.getItem(STORAGE_KEYS.SETTINGS)) {
-      this.saveSettings(DEFAULT_SETTINGS);
+      localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(DEFAULT_SETTINGS));
     }
     if (!localStorage.getItem(STORAGE_KEYS.ACCOUNTS)) {
-      this.saveAccounts(DEFAULT_ACCOUNTS);
+      localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(DEFAULT_ACCOUNTS));
     } else {
       let accs = this.getAccounts();
       let changed = false;
@@ -204,25 +207,26 @@ class StorageManager {
       }
 
       if (changed) {
-        this.saveAccounts(accs);
+        // บันทึกเฉพาะใน LocalStorage เครื่องนี้เท่านั้น ไม่ส่งทับขึ้น Cloud
+        this.saveAccounts(accs, false);
       }
     }
     if (!localStorage.getItem(STORAGE_KEYS.RECORDS)) {
-      this.saveRecords(DEFAULT_RECORDS);
+      localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(DEFAULT_RECORDS));
     } else {
       // ลบประวัติตัวอย่างเดิมที่ผูกกับ kru1 (ถ้ามี)
       let recs = this.getRecords();
       if (recs.some(r => r.id === 'rec_1001' || r.teacherUsername === 'kru1')) {
         recs = recs.filter(r => r.id !== 'rec_1001' && r.teacherUsername !== 'kru1');
-        this.saveRecords(recs);
+        this.saveRecords(recs, false);
       }
     }
 
     // เริ่มต้นระบบเชื่อมต่อและซิงค์ข้อมูลกับ Firebase Realtime Database
     this.initCloudSync();
 
-    // รันระบบตรวจสอบและบีบอัดรูปภาพเก่าอัตโนมัติ (Self-Healing Storage Optimizer)
-    setTimeout(() => this.autoOptimizeStorage(), 500);
+    // รันระบบตรวจสอบและบีบอัดรูปภาพเก่าอัตโนมัติ (เฉพาะเครื่องนี้ ไม่ดันขึ้นคลาวด์)
+    setTimeout(() => this.autoOptimizeStorage(), 1500);
   }
 
   // --- ระบบเชื่อมต่อและซิงค์ข้อมูลข้ามอุปกรณ์ผ่าน Firebase Realtime Database (Cloud Sync) ---
@@ -255,6 +259,10 @@ class StorageManager {
         }
 
         if (accounts.length > 0) {
+          // ตรวจสอบให้แน่ใจว่ามี Admin อยู่เสมอ
+          if (!accounts.some(a => a.username === '568242')) {
+            accounts.unshift(DEFAULT_ACCOUNTS[0]);
+          }
           localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
           
           safeUI(() => {
@@ -270,9 +278,10 @@ class StorageManager {
           });
         }
       } else {
-        // หากบนคลาวด์ยังว่างเปล่า ให้สำเนาค่าตั้งต้นขึ้นไปเก็บบนคลาวด์
+        // หากบนคลาวด์ยังว่างเปล่า ให้สำเนาเฉพาะเมื่อในเครื่องมีข้อมูลครูที่สร้างจริงเท่านั้น
+        // (ห้ามส่ง DEFAULT_ACCOUNTS ที่ยังไม่มีครูขึ้นไปเด็ดขาด)
         const localAccs = this.getAccounts();
-        if (localAccs && localAccs.length > 0) {
+        if (localAccs && localAccs.some(a => a.role === 'teacher')) {
           db.ref('accounts').set(JSON.parse(JSON.stringify(localAccs))).catch(() => {});
         }
       }
@@ -298,6 +307,7 @@ class StorageManager {
           }
         });
       } else {
+        // หากบนคลาวด์ยังว่างเปล่า ให้สำเนาเฉพาะเมื่อในเครื่องมีบันทึกจริง > 0 รายการ
         const localRecs = this.getRecords();
         if (localRecs && localRecs.length > 0) {
           db.ref('records').set(JSON.parse(JSON.stringify(localRecs))).catch(() => {});
@@ -318,8 +328,9 @@ class StorageManager {
           }
         });
       } else {
+        // หากบนคลาวด์ยังว่างเปล่า ให้สำเนาเฉพาะเมื่อโรงเรียนถูกตั้งชื่อแล้ว (ไม่ใช่ชื่อดีฟอลต์)
         const localSet = this.getSettings();
-        if (localSet) {
+        if (localSet && localSet.schoolName && localSet.schoolName !== DEFAULT_SETTINGS.schoolName) {
           db.ref('settings').set(JSON.parse(JSON.stringify(localSet))).catch(() => {});
         }
       }
@@ -350,7 +361,7 @@ class StorageManager {
         }
       }
       if (accsChanged) {
-        this.saveAccounts(accounts);
+        this.saveAccounts(accounts, false);
         const curUser = this.getCurrentUser();
         if (curUser) {
           const matched = accounts.find(a => a.id === curUser.id);
@@ -363,7 +374,7 @@ class StorageManager {
         const comp = await window.compressImageFile(settings.logo, 200, 200, 0.75, false);
         if (comp && comp.length < settings.logo.length) {
           settings.logo = comp;
-          this.saveSettings(settings);
+          this.saveSettings(settings, false);
         }
       }
 
@@ -395,7 +406,7 @@ class StorageManager {
         }
       }
       if (recsChanged) {
-        this.saveRecords(records);
+        this.saveRecords(records, false);
       }
     } catch (e) {
       console.warn('Auto storage optimization failed:', e);
@@ -412,9 +423,9 @@ class StorageManager {
     }
   }
 
-  saveSettings(settings) {
+  saveSettings(settings, syncToCloud = true) {
     localStorage.setItem(STORAGE_KEYS.SETTINGS, JSON.stringify(settings));
-    if (window.firebaseDb) {
+    if (syncToCloud && window.firebaseDb) {
       try {
         window.firebaseDb.ref('settings').set(JSON.parse(JSON.stringify(settings))).catch(e => console.warn('Firebase saveSettings error:', e));
       } catch (e) {
@@ -433,7 +444,7 @@ class StorageManager {
     }
   }
 
-  saveAccounts(accounts) {
+  saveAccounts(accounts, syncToCloud = true) {
     try {
       localStorage.setItem(STORAGE_KEYS.ACCOUNTS, JSON.stringify(accounts));
     } catch (err) {
@@ -442,7 +453,7 @@ class StorageManager {
       }
       throw err;
     }
-    if (window.firebaseDb) {
+    if (syncToCloud && window.firebaseDb) {
       try {
         window.firebaseDb.ref('accounts').set(JSON.parse(JSON.stringify(accounts))).catch(e => console.warn('Firebase saveAccounts error:', e));
       } catch (e) {
@@ -763,7 +774,7 @@ class StorageManager {
     }
   }
 
-  saveRecords(records) {
+  saveRecords(records, syncToCloud = true) {
     try {
       localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(records));
     } catch (err) {
@@ -793,7 +804,7 @@ class StorageManager {
           });
           try {
             localStorage.setItem(STORAGE_KEYS.RECORDS, JSON.stringify(emergencySlim));
-            if (window.firebaseDb) {
+            if (syncToCloud && window.firebaseDb) {
               window.firebaseDb.ref('records').set(JSON.parse(JSON.stringify(emergencySlim))).catch(() => {});
             }
             return;
@@ -804,7 +815,7 @@ class StorageManager {
       }
       throw err;
     }
-    if (window.firebaseDb) {
+    if (syncToCloud && window.firebaseDb) {
       try {
         window.firebaseDb.ref('records').set(JSON.parse(JSON.stringify(records))).catch(e => console.warn('Firebase saveRecords error:', e));
       } catch (e) {
